@@ -36,6 +36,12 @@ hist(as.numeric(dispatch_data$At_Scene_Date_Time - dispatch_data$Received_Date_T
 # Look at times by beat or description
 
 
+# Ideas:
+# response times
+# times of day (downloaded data in PST, API data in UTC)
+# day of week
+# locations
+
 
 
 
