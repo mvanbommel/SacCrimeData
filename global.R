@@ -1,6 +1,8 @@
 library(DT)
+library(leaflet)
 
 dispatch_data = read.csv('Sacramento_Dispatch_Data_From_Current_Year.csv')
+colnames(dispatch_data)[c(1,2)] = c('longitude', 'lattitude')
 
 available_data_index = function(column_name, dispatch_data, type='Time') {
   column = dispatch_data[, column_name]
@@ -42,6 +44,18 @@ hist(as.numeric(dispatch_data$At_Scene_Date_Time - dispatch_data$Received_Date_T
 # day of week
 # locations
 
+
+
+###########
+# Mapping
+###########
+m <- leaflet() %>% setView(lng = -121.49, lat = 38.57, zoom = 11)
+m %>% addTiles()
+
+dispatch_data = dispatch_data[1:100, ]
+
+leaflet(data = dispatch_data) %>% addTiles() %>%
+  addMarkers(~dispatch_data$longitude, ~dispatch_data$lattitude, popup = ~as.character(dispatch_data$Description), label = ~as.character(dispatch_data$Location))
 
 
 
