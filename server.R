@@ -4,12 +4,16 @@ server <- function(input, output, session) {
     dispatch_data
   })
   
-  dispatch_subset <- eventReactive(input$new_points, {
-    subset_index = sample(1:nrow(dispatch_data), size=25, replace=FALSE)
+  points_on_map = reactive(input$points_on_map)
+  
+  dispatch_subset <- reactive({
+    refresh = input$new_points
+    
+    subset_index = sample(1:nrow(dispatch_data), size=points_on_map(), replace=FALSE)
     print(subset_index)
     dispatch_subset = dispatch_data[subset_index, ]
     dispatch_subset
-  }, ignoreNULL = FALSE)
+  })
   
   output$dispatch_map <- renderLeaflet({
     dispatch_subset = dispatch_subset()
