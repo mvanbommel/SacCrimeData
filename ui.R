@@ -9,9 +9,10 @@ shinyUI(
         actionButton("new_points", "New points")
       ),
       fluidRow(
-        sliderInput("points_on_map", h3("Points Displayed"),
-                    min = 0, max = 100, value = 25),
-        sliderInput("time_range", h3("Time"))
+        uiOutput("points_on_map"),
+        sliderInput("time_range", h3("Time"),
+                    min=0, max=24, value=c(9, 17),
+                    post=':00')
       )
     ),
     tabPanel("Table", id="table_tab",

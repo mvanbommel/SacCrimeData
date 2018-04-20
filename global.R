@@ -1,46 +1,111 @@
 library(DT)
 library(leaflet)
+library(dplyr)
+
+
+# To do:
+# - warning message if selected number of points is too large
+# - dynamix max number of points
+
 
 # Functions ----
-available_data_index = function(column_name, dispatch_data, type='Time') {
-  column = dispatch_data[, column_name]
-  which(!(gsub("^\\s+|\\s+$", "", substr(as.character(column), 1, 10)) %in% c('', '1899-01-01')))
+missing_data_index = function(column_name, dispatch_data) {
+  if (grepl('date', column_name)) {
+    type = 'date'
+  } else if (grepl('time', column_name)) {
+    type = 'time'
+  } else {
+    type = column_name
+  }
+  if (type %in% c('date', 'time')) {
+    column = dispatch_data[, column_name]
+    
+    # Remove white space and extract the first 10 characters
+    # - missing times will be blank
+    # - missing dates will be 1899-01-01 
+    which((gsub("^\\s+|\\s+$", "", substr(as.character(column), 1, 10)) %in% c('', '1899-01-01')))
+    
+  } else if (type == 'longitude') {
+    which(dispatch_data[, column_name] == -142.954)
+  } else if (type == 'latitude') {
+    which(dispatch_data[, column_name] == 31.096)
+  } else {
+    stop(paste0('Column: ', column_name, 'not applicable for missing_data_index()'))
+  }
+  
 }
 
 convert_to_date_time <- function(date_time_name, dispatch_data) {
-  dispatch_data[, paste0(date_time_name, '_Date_Time')] = as.POSIXct(paste0(substr(dispatch_data[, paste0(date_time_name, '_Date')], 1, 10), ' ', dispatch_data[, paste0(date_time_name, '_Time')]))
-  dispatch_data = dispatch_data[, -which(colnames(dispatch_data) %in% c(paste0(date_time_name, '_Date'), paste0(date_time_name, '_Time')))]
+  dispatch_data[, paste0(date_time_name, '_date_time')] = as.POSIXct(paste0(substr(dispatch_data[, paste0(date_time_name, '_date')], 1, 10), ' ', dispatch_data[, paste0(date_time_name, '_time')]))
+  dispatch_data = dispatch_data[, -which(colnames(dispatch_data) %in% c(paste0(date_time_name, '_date'), paste0(date_time_name, '_time')))]
   dispatch_data
 }
 
 
 # Read Data ----
 dispatch_data = read.csv('Sacramento_Dispatch_Data_From_Current_Year.csv')
-colnames(dispatch_data)[c(1,2)] = c('longitude', 'lattitude')
+colnames(dispatch_data)[1] = 'X'
+
+dispatch_data = dispatch_data %>%
+  mutate(Report_Created = ifelse(Report_Created == Y, TRUE, FALSE),
+         Day_of_Week = recode(Day_of_Week, 'Sun' = 'Sunday',
+                                              'Mon' = 'Monday',
+                                              'Tue' = 'Tuesday',
+                                              'Wed' = 'Wednesday',
+                                              'Thu' = 'Thursday', 
+                                              'Fri' = 'Friday',
+                                              'Sat' = 'Saturday')) %>%
+  select('location' = Location,
+         'call_type_code' = Call_Type,
+         'call_type_description' = Description,
+         'reporting_officer_id' = Reporting_Officer,
+         'unit_id' = Unit_ID,
+         'police_district' = Police_District,
+         'police_beat' = Beat,
+         'day_of_week' = Day_of_Week,
+         'occurence_date' = Occurence_Date,
+         'occurence_time' = Occurence_Time,
+         'received_date' = Received_Date,
+         'received_time' = Received_Time,
+         'dispatch_date' = Dispatch_Date,
+         'dispatch_time' = Dispatch_Time,
+         'enroute_date' = Enroute_Date,
+         'enroute_time' = Enroute_Time,
+         'at_scene_date' = At_Scene_Date,
+         'at_scene_time' = At_Scene_Time,
+         'clear_date' = Clear_Date,
+         'clear_time' = Clear_Time,
+         'longitude' = X,
+         'latitude' = Y,
+         'report_created' = Report_Created)
 
 # Remove rows with locations outside of Sacramento
-dispatch_data = dispatch_data[-which(dispatch_data$lattitude < 38 | dispatch_data$lattitude > 39 | dispatch_data$longitude < -122 | dispatch_data$longitude > -121), ]
+dispatch_data = dispatch_data[-which(dispatch_data$latitude < 38 | dispatch_data$latitude > 39 | dispatch_data$longitude < -122 | dispatch_data$longitude > -121), ]
 
 
-# Remove rows with missing time or date information
-time_points = c('Occurence', 'Received', 'Dispatch', 'Enroute', 'At_Scene', 'Clear')
+# Remove rows with missing time or date information, or missing latitude/longitude
+time_points = c('occurence', 'received', 'dispatch', 'enroute', 'at_scene', 'clear')
 
-available_time_index = lapply(paste0(time_points, '_Time'), available_data_index, dispatch_data, type='Time')
-available_date_index = lapply(paste0(time_points, '_Date'), available_data_index, dispatch_data, type='Date')
+missing_time_index = lapply(paste0(time_points, '_time'), missing_data_index, dispatch_data)
+missing_date_index = lapply(paste0(time_points, '_date'), missing_data_index, dispatch_data)
 
-all_times_available = Reduce(intersect, available_time_index)
-all_dates_available = Reduce(intersect, available_date_index)
+any_time_missing = Reduce(union, missing_time_index)
+any_date_missing = Reduce(union, missing_date_index)
 
-all_date_times_available = Reduce(intersect, list(all_times_available, all_dates_available))
+missing_latitude_index = missing_data_index('latitude', dispatch_data)
+missing_longitude_index = missing_data_index('longitude', dispatch_data)
 
-dispatch_data = dispatch_data[all_date_times_available, ]
+any_data_missing = Reduce(union, list(any_time_missing, any_date_missing, missing_latitude_index, missing_longitude_index))
 
+dispatch_data = dispatch_data[any_data_missing, ]
+
+# Convert separate date and time columns to combined date-time columns
 for (name in time_points) {
   dispatch_data = convert_to_date_time(name, dispatch_data)
 }
 
 # Add decimal integer data for filtering
-dispatch_data[, 'Occurence_Time'] = as.numeric(format(dispatch_data$Occurence_Date_Time, "%H")) + (as.numeric(format(dispatch_data$Occurence_Date_Time, "%M")) / 60)
+dispatch_data[, 'occurence_time'] = as.numeric(format(dispatch_data$occurence_date_time, "%H")) + (as.numeric(format(dispatch_data$occurence_date_time, "%M")) / 60)
  
 
 # hist(as.numeric(dispatch_data$At_Scene_Date_Time - dispatch_data$Received_Date_Time)[which(as.numeric(dispatch_data$At_Scene_Date_Time - dispatch_data$Received_Date_Time) < 10000 & as.numeric(dispatch_data$At_Scene_Date_Time - dispatch_data$Received_Date_Time) > 0)] / 60)
@@ -66,7 +131,7 @@ dispatch_data[, 'Occurence_Time'] = as.numeric(format(dispatch_data$Occurence_Da
 # dispatch_data = dispatch_data[1:100, ]
 # 
 # leaflet(data = dispatch_data) %>% addTiles() %>%
-#   addMarkers(~dispatch_data$longitude, ~dispatch_data$lattitude, popup = ~as.character(dispatch_data$Description), label = ~as.character(dispatch_data$Location))
+#   addMarkers(~dispatch_data$longitude, ~dispatch_data$latitude, popup = ~as.character(dispatch_data$Description), label = ~as.character(dispatch_data$Location))
 
 
 
