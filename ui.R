@@ -5,12 +5,12 @@ shinyUI(
     tabPanel("Map", id="map_tab",
       fluidRow(
         leafletOutput("dispatch_map"),
-        p(),
+        textOutput("points_displayed_message"),
         actionButton("new_points", "New points")
       ),
       fluidRow(
         uiOutput("points_on_map"),
-        sliderInput("time_range", h3("Time"),
+        sliderInput("occurence_time_range", h3("Occurence Time"),
                     min=0, max=24, value=c(9, 17),
                     post=':00')
       )
