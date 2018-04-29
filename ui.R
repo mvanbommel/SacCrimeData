@@ -2,6 +2,8 @@ library(shiny)
 
 shinyUI(
   navbarPage("Sacramento Dispatch Data", id = "dispatch_data",
+    
+    # Map Tab ----
     tabPanel("Map", id="map_tab",
       fluidRow(
         leafletOutput("dispatch_map"),
@@ -15,6 +17,8 @@ shinyUI(
                     post=':00')
       )
     ),
+    
+    # Table Tab ----
     tabPanel("Table", id="table_tab",
       fluidRow(
        DT::dataTableOutput("dispatch_table")

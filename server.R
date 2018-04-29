@@ -1,15 +1,21 @@
 server <- function(input, output, session) {
   
+  # UI Inputs ----
   # Input for selecting the number of points to display on the map
   output$points_on_map = renderUI({
     numericInput("points_on_map", h3("Points Displayed"),
                  min=0, max=100, value = 25)
   })
   
+  # Table ----
+  
   # Table in the table pane
   output$dispatch_table = DT::renderDataTable({
     filtered_dispatch_data()
   })
+  
+  
+  # Map ----
   
   # Filter the dispatch data based on the selected inputs
   filtered_dispatch_data = reactive({
