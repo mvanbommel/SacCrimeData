@@ -17,7 +17,9 @@ shinyUI(
                     min=0, max=24, value=c(0, 24),
                     post=':00'),
         
-        uiOutput("occurence_date_range"),
+        # NULL end defaults to today's date
+        dateRangeInput("occurence_date_range", h3("Occurence Date"),
+                       start=min(dispatch_data$occurence_date), end=NULL),
         
         checkboxGroupInput("day_of_week", h3("Day of the Week"),
                            choiceNames = list('S', 'M', 'T', 'W', 'T', 'F', 'S'),
@@ -35,7 +37,13 @@ shinyUI(
                                            'Thursday', 
                                            'Friday', 
                                            'Saturday'),
-                           inline = TRUE)
+                           inline = TRUE),
+        
+        selectInput("call_type_description", h3("Call Type Description"), 
+                    choices = c('ALL', sort(unique(dispatch_data$call_type_description))),
+                    selected = 'ALL',
+                    multiple = TRUE,
+                    selectize = TRUE)
 
       )
     ),

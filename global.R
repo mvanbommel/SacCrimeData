@@ -43,7 +43,7 @@ convert_to_date_time <- function(date_time_name, dispatch_data) {
 
 
 # Read Data ----
-dispatch_data = read.csv('Sacramento_Dispatch_Data_From_Current_Year.csv')
+dispatch_data = read.csv('Sacramento_Dispatch_Data_From_Current_Year.csv', stringsAsFactors = FALSE)
 colnames(dispatch_data)[1] = 'X'
 
 dispatch_data = dispatch_data %>%

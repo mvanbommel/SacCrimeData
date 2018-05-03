@@ -7,12 +7,6 @@ server <- function(input, output, session) {
                  min=0, max=100, value = 25)
   })
   
-  # Input for selecting the date range to display on the map
-  # NULL end defaults to today's date
-  output$occurence_date_range = renderUI({
-    dateRangeInput("occurence_date_range", h3("Occurence Date"),
-                 start=min(dispatch_data$occurence_date), end=NULL)
-  })
   
   # Table ----
   
@@ -29,11 +23,13 @@ server <- function(input, output, session) {
     req(input$occurence_time_range)
     req(input$occurence_date_range)
     req(input$day_of_week)
+    req(input$call_type_description)
     
     filtered_disptach_data = dispatch_data %>%
       filter(occurence_time > input$occurence_time_range[1] & occurence_time < input$occurence_time_range[2]) %>%
       filter(occurence_date > input$occurence_date_range[1] & occurence_date < input$occurence_date_range[2]) %>%
-      filter(day_of_week %in% input$day_of_week)
+      filter(day_of_week %in% input$day_of_week) %>%
+      filter(call_type_description %in% ifelse(length(input$call_type_description) == 0 | input$call_type_description == 'ALL', unique(dispatch_data$call_type_description), input$call_type_description))
   })
   
   # Compute the number of observations in the filtered data
