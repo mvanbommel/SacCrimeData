@@ -4,8 +4,8 @@ library(dplyr)
 
 
 # To do:
-# - warning message if selected number of points is too large
-# - dynamix max number of points
+# - add description filter
+# - plot of response times (selected using inputs)
 
 
 # Functions ----
@@ -106,7 +106,8 @@ for (name in time_points) {
 
 # Add decimal integer data for filtering
 dispatch_data[, 'occurence_time'] = as.numeric(format(dispatch_data$occurence_date_time, "%H")) + (as.numeric(format(dispatch_data$occurence_date_time, "%M")) / 60)
- 
+dispatch_data[, 'occurence_date'] = as.Date(dispatch_data$occurence_date_time, "America/Los_Angeles")
+
 
 # hist(as.numeric(dispatch_data$At_Scene_Date_Time - dispatch_data$Received_Date_Time)[which(as.numeric(dispatch_data$At_Scene_Date_Time - dispatch_data$Received_Date_Time) < 10000 & as.numeric(dispatch_data$At_Scene_Date_Time - dispatch_data$Received_Date_Time) > 0)] / 60)
 # 
