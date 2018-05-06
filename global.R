@@ -1,11 +1,14 @@
 library(DT)
 library(leaflet)
 library(dplyr)
+library(shinyWidgets)
 
 
 # To do:
-# - add description filter
+# - add more information (date) to markers
 # - plot of response times (selected using inputs)
+
+
 
 
 # Functions ----
@@ -23,27 +26,34 @@ missing_data_index = function(column_name, dispatch_data) {
     # Remove white space and extract the first 10 characters
     # - missing times will be blank
     # - missing dates will be 1899-01-01 
-    which((gsub("^\\s+|\\s+$", "", substr(as.character(column), 1, 10)) %in% c('', '1899-01-01')))
+    which((gsub("^\\s+|\\s+$", "", substr(as.character(column), 1, 10)) %in% 
+             c('', '1899-01-01')))
     
   } else if (type == 'longitude') {
     which(dispatch_data[, column_name] == -142.954)
   } else if (type == 'latitude') {
     which(dispatch_data[, column_name] == 31.096)
   } else {
-    stop(paste0('Column: ', column_name, 'not applicable for missing_data_index()'))
+    stop(paste0('Column: ', column_name, 
+                'not applicable for missing_data_index()'))
   }
   
 }
 
 convert_to_date_time <- function(date_time_name, dispatch_data) {
-  dispatch_data[, paste0(date_time_name, '_date_time')] = as.POSIXct(paste0(substr(dispatch_data[, paste0(date_time_name, '_date')], 1, 10), ' ', dispatch_data[, paste0(date_time_name, '_time')]))
-  dispatch_data = dispatch_data[, -which(colnames(dispatch_data) %in% c(paste0(date_time_name, '_date'), paste0(date_time_name, '_time')))]
+  dispatch_data[, paste0(date_time_name, '_date_time')] = as.POSIXct(paste0(substr(dispatch_data[, paste0(date_time_name, '_date')], 
+                                                                                   1, 10),
+                                                                            ' ', 
+                                                                            dispatch_data[, paste0(date_time_name, '_time')]))
+  dispatch_data = dispatch_data[, -which(colnames(dispatch_data) %in% c(paste0(date_time_name, '_date'), 
+                                                                        paste0(date_time_name, '_time')))]
   dispatch_data
 }
 
 
 # Read Data ----
-dispatch_data = read.csv('Sacramento_Dispatch_Data_From_Current_Year.csv', stringsAsFactors = FALSE)
+dispatch_data = read.csv('Sacramento_Dispatch_Data_From_Current_Year.csv', 
+                         stringsAsFactors = FALSE)
 colnames(dispatch_data)[1] = 'X'
 
 dispatch_data = dispatch_data %>%
@@ -80,14 +90,26 @@ dispatch_data = dispatch_data %>%
          'report_created' = Report_Created)
 
 # Remove rows with locations outside of Sacramento
-dispatch_data = dispatch_data[-which(dispatch_data$latitude < 38 | dispatch_data$latitude > 39 | dispatch_data$longitude < -122 | dispatch_data$longitude > -121), ]
+dispatch_data = dispatch_data[-which(dispatch_data$latitude < 38 | 
+                                       dispatch_data$latitude > 39 | 
+                                       dispatch_data$longitude < -122 | 
+                                       dispatch_data$longitude > -121), ]
 
 
-# Remove rows with missing time or date information, or missing latitude/longitude
-time_points = c('occurence', 'received', 'dispatch', 'enroute', 'at_scene', 'clear')
+# Remove rows with missing time/date information, or missing latitude/longitude
+time_points = c('occurence', 
+                'received', 
+                'dispatch', 
+                'enroute', 
+                'at_scene', 
+                'clear')
 
-missing_time_index = lapply(paste0(time_points, '_time'), missing_data_index, dispatch_data)
-missing_date_index = lapply(paste0(time_points, '_date'), missing_data_index, dispatch_data)
+missing_time_index = lapply(paste0(time_points, '_time'), 
+                            missing_data_index, 
+                            dispatch_data)
+missing_date_index = lapply(paste0(time_points, '_date'), 
+                            missing_data_index, 
+                            dispatch_data)
 
 any_time_missing = Reduce(union, missing_time_index)
 any_date_missing = Reduce(union, missing_date_index)
@@ -95,7 +117,9 @@ any_date_missing = Reduce(union, missing_date_index)
 missing_latitude_index = missing_data_index('latitude', dispatch_data)
 missing_longitude_index = missing_data_index('longitude', dispatch_data)
 
-any_data_missing = Reduce(union, list(any_time_missing, any_date_missing, missing_latitude_index, missing_longitude_index))
+any_data_missing = Reduce(union, list(any_time_missing, any_date_missing, 
+                                      missing_latitude_index, 
+                                      missing_longitude_index))
 
 dispatch_data = dispatch_data[any_data_missing, ]
 
@@ -105,8 +129,39 @@ for (name in time_points) {
 }
 
 # Add decimal integer data for filtering
-dispatch_data[, 'occurence_time'] = as.numeric(format(dispatch_data$occurence_date_time, "%H")) + (as.numeric(format(dispatch_data$occurence_date_time, "%M")) / 60)
-dispatch_data[, 'occurence_date'] = as.Date(dispatch_data$occurence_date_time, "America/Los_Angeles")
+dispatch_data[, 'occurence_time'] = as.numeric(format(dispatch_data$occurence_date_time, "%H")) + 
+                                    (as.numeric(format(dispatch_data$occurence_date_time, "%M")) / 60)
+dispatch_data[, 'occurence_date'] = as.Date(dispatch_data$occurence_date_time, 
+                                            "America/Los_Angeles")
+
+
+# Variables ----
+all_descriptions = sort(unique(dispatch_data$call_type_description))
+description_time_groups = c('IN PROGRESS', 
+                            'LESS THAN 5 AGO', 
+                            'LESS THAN 15 AGO')
+description_crime_groups =  c('ASSAULT',
+                              'BURGLARY',
+                              'CARJACKING',
+                              'DOMESTIC VIOLENCE',
+                              'HIT & RUN',
+                              'RAPE',
+                              'ROBBERY',
+                              'SHOOTING',
+                              'STOLEN VEHICLE',
+                              'THEFT',
+                              'VANDALISM',
+                              'VEHICLE ADDICENT',
+                              'OTHER')
+description_groups = c(description_time_groups, description_crime_groups)
+
+# Label any descriptions not a in crime group as "Other"
+any_crime_group_index = unique(unlist(lapply(description_crime_groups, 
+                                             grep, 
+                                             all_descriptions)))
+other_crime_descriptions = all_descriptions[-any_crime_group_index]
+
+
 
 
 # hist(as.numeric(dispatch_data$At_Scene_Date_Time - dispatch_data$Received_Date_Time)[which(as.numeric(dispatch_data$At_Scene_Date_Time - dispatch_data$Received_Date_Time) < 10000 & as.numeric(dispatch_data$At_Scene_Date_Time - dispatch_data$Received_Date_Time) > 0)] / 60)

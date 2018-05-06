@@ -39,13 +39,20 @@ shinyUI(
                                            'Saturday'),
                            inline = TRUE),
         
-        selectInput("call_type_description", h3("Call Type Description"), 
-                    choices = c('ALL', sort(unique(dispatch_data$call_type_description))),
-                    selected = 'ALL',
-                    multiple = TRUE,
-                    selectize = TRUE)
+        pickerInput("description_groups", h3("Call Type Description Groups"), 
+                    choices = list(Times = description_time_groups,
+                                   Crimes = description_crime_groups), 
+                    selected = description_groups,
+                    options = list(`selected-text-format` = "count > 1",
+                                   `actions-box` = TRUE,
+                                   `live-search` = TRUE), 
+                    multiple = TRUE),
+        
+        uiOutput("call_type_description")
+
 
       )
+
     ),
     
     # Table Tab ----
