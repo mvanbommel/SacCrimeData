@@ -6,7 +6,8 @@ library(shinyWidgets)
 
 # To do:
 # - add more information (date) to markers
-# - plot of response times (selected using inputs)
+# - location search/filter
+# - make time histogram dynamic
 
 
 
@@ -121,7 +122,7 @@ any_data_missing = Reduce(union, list(any_time_missing, any_date_missing,
                                       missing_latitude_index, 
                                       missing_longitude_index))
 
-dispatch_data = dispatch_data[any_data_missing, ]
+dispatch_data = dispatch_data[-any_data_missing, ]
 
 # Convert separate date and time columns to combined date-time columns
 for (name in time_points) {

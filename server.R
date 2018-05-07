@@ -123,5 +123,28 @@ server <- function(input, output, session) {
     map
   })
 
+  
+  # Time Distribution
+  output$time_distribution = renderPlot({
+    req(filtered_dispatch_data())
+   
+    time_choices = c("Occurence", "Received", "Dispatch", 
+                     "Enroute", "At Scene", "Clear")
+    time_values = c("occurence", "received", "dispatch",
+                    "enroute", "at_scene", "clear")
+    
+    start_time_column = paste0(time_values[which(time_choices == input$time_range[1])], 
+                               "_date_time")
+    end_time_column = paste0(time_values[which(time_choices == input$time_range[2])], 
+                             "_date_time")
+    
+    times = as.numeric(difftime(filtered_dispatch_data()[, end_time_column], 
+                                filtered_dispatch_data()[, start_time_column],
+                                units = "mins"))
+    
+    # Create a histogram of all response times less than 24 hours
+    hist(times[times < 1440])
+  })
+  
 }
 

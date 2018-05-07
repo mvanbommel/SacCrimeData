@@ -48,10 +48,17 @@ shinyUI(
                                    `live-search` = TRUE), 
                     multiple = TRUE),
         
-        uiOutput("call_type_description")
+        uiOutput("call_type_description"),
+        
+        
+        sliderTextInput("time_range", h3("Start and End of Time Range"),
+                        choices = c("Occurence", "Received", "Dispatch", 
+                                    "Enroute", "At Scene", "Clear"),
+                        selected = c("Occurence", "Clear"))
 
-
-      )
+      ),
+      
+      plotOutput("time_distribution")
 
     ),
     
