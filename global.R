@@ -8,6 +8,8 @@ library(shinyWidgets)
 # - add more information (date) to markers
 # - location search/filter
 # - make time histogram dynamic
+#   - input values for x range?
+#   - https://gallery.shinyapps.io/105-plot-interaction-zoom/
 
 
 
