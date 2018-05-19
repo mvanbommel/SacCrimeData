@@ -37,38 +37,114 @@ server <- function(input, output, session) {
   
   # Map ----
   
-  # Filter the dispatch data based on the selected inputs
+  # * Filtering the Data ----
+  # ** Inputs ----
   filtered_dispatch_data = reactive({
     req(input$occurence_time_range)
     req(input$occurence_date_range)
     req(input$day_of_week)
     req(input$call_type_description)
     
-    filtered_disptach_data = dispatch_data %>%
-      filter(occurence_time > input$occurence_time_range[1] & 
-             occurence_time < input$occurence_time_range[2]) %>%
+    # Always filter occurence date and call type description
+    filtered_dispatch_data = dispatch_data %>%
       filter(occurence_date > input$occurence_date_range[1] & 
-             occurence_date < input$occurence_date_range[2]) %>%
-      filter(day_of_week %in% input$day_of_week) %>%
+               occurence_date < input$occurence_date_range[2]) %>%
       filter(call_type_description %in% ifelse(length(input$call_type_description) == 0 | 
                                                  input$call_type_description == 'ALL', 
                                                unique(dispatch_data$call_type_description), 
                                                input$call_type_description))
+    
+    
+    # Only filter occurence times and day of the week if the user changes the default
+    if (!all.equal(input$occurence_time_range, c(0, 24))) {
+      filtered_dispatch_data = filtered_dispatch_data %>%
+        filter(occurence_time > input$occurence_time_range[1] & 
+                 occurence_time < input$occurence_time_range[2])
+    }
+    if (!all.equal(input$day_of_week, c('Sunday', 
+                                        'Monday', 
+                                        'Tuesday', 
+                                        'Wednesday', 
+                                        'Thursday', 
+                                        'Friday', 
+                                        'Saturday'))) {
+      filtered_dispatch_data = filtered_dispatch_data %>%
+        filter(day_of_week %in% input$day_of_week)
+    }
+    
+    filtered_dispatch_data
   })
   
   # Compute the number of observations in the filtered data
   number_filtered_observations = reactive({
     nrow(filtered_dispatch_data())
   })
+  
+  # ** Map ----
+  map_filtered_dispatch_data = reactive({
+    missing_latitude_index = missing_data_index('latitude', filtered_dispatch_data())
+    missing_longitude_index = missing_data_index('longitude', filtered_dispatch_data())
+    
+    any_data_missing = Reduce(union, list(missing_latitude_index, 
+                                          missing_longitude_index))
+    
+    if (length(any_data_missing) > 0) {
+      map_filtered_dispatch_data = filtered_dispatch_data()[-any_data_missing, ]
+    } else {
+      map_filtered_dispatch_data = filtered_dispatch_data()
+    }
+    
+    map_filtered_dispatch_data
+  })
+  
+  # Compute the number of observations in the map filtered data
+  number_map_filtered_observations = reactive({
+    nrow(map_filtered_dispatch_data())
+  })
+  
+  # ** Times ----
+  time_filtered_dispatch_data = reactive({
+    req(input$time_range)
 
+    time_choices = c("Occurence", "Received", "Dispatch", 
+                     "Enroute", "At Scene", "Clear")
+    time_values = c("occurence", "received", "dispatch",
+                    "enroute", "at_scene", "clear")
+    
+    start_time_column = paste0(time_values[which(time_choices == input$time_range[1])], 
+                               "_date_time")
+    end_time_column = paste0(time_values[which(time_choices == input$time_range[2])], 
+                             "_date_time")
+    
+    missing_start_time_index = missing_data_index(start_time_column, filtered_dispatch_data())
+    missing_end_time_index = missing_data_index(end_time_column, filtered_dispatch_data())
+    
+    any_data_missing = Reduce(union, list(missing_start_time_index, 
+                                          missing_end_time_index))
+    
+    if (length(any_data_missing) > 0) {
+      time_filtered_dispatch_data = filtered_dispatch_data()[-any_data_missing, ]
+    } else {
+      time_filtered_dispatch_data = filtered_dispatch_data()
+    }
+    
+    time_filtered_dispatch_data
+  })
+  
+  # Compute the number of observations in the time filtered data
+  number_time_filtered_observations = reactive({
+    nrow(time_filtered_dispatch_data())
+  })
+  
+  
   # Determine how many points to display on the map
   points_on_map = reactive({
-    req(input$points_on_map, number_filtered_observations())
+    req(input$points_on_map, number_map_filtered_observations())
     
     # If the user selects more points than are available, display the maximum 
     # number of points available
-    if (input$points_on_map > number_filtered_observations()) {
-      points_on_map = number_filtered_observations()
+    if (input$points_on_map > number_map_filtered_observations()) {
+      points_on_map = number_map_filtered_observations()
     } else {
       points_on_map = input$points_on_map
     }
@@ -76,13 +152,17 @@ server <- function(input, output, session) {
   
   # Create the message stating how many points are shown on the map and how many 
   # are available
-  output$points_displayed_message = renderText({
+  output$points_displayed_message = renderUI({
     req(number_filtered_observations())
-    paste0("Showing ", 
-           points_on_map(), 
-           " of ", 
-           number_filtered_observations(), 
-           " entries.")
+    HTML(paste0("Showing ", 
+                 points_on_map(), 
+                 " of ", 
+                 number_map_filtered_observations(), 
+                 " entries with location data. <br/>",
+                 number_filtered_observations() - number_map_filtered_observations(),
+                 " additional entries are missing location data. <br/>",
+                 number_total_observations - number_filtered_observations(),
+                 " additional observations do not meet the selected requirements."))
   })
   
   # Generate a random order to be used to select a random subset of the 
@@ -95,7 +175,7 @@ server <- function(input, output, session) {
                           replace=FALSE)
   })
   
-  # Create the map
+  # * Map Output ----
   output$dispatch_map = renderLeaflet({
     # Deafult to a blank map   
     map = leaflet() %>%
@@ -103,13 +183,13 @@ server <- function(input, output, session) {
             setView(-121.5, 38.55, zoom=10)
     
     if (!is.null(input$call_type_description)) {
-      req(input$points_on_map, number_filtered_observations())
-      if (number_filtered_observations() != 0) {
+      req(input$points_on_map, number_map_filtered_observations())
+      if (number_map_filtered_observations() != 0) {
         # If a description is selected and there are more than 0 filtered 
         # observations:
         
         # Generate the subset of points to display and place them on the map 
-        dispatch_subset = filtered_dispatch_data()[random_order()[1:points_on_map()], ]
+        dispatch_subset = map_filtered_dispatch_data()[random_order()[1:points_on_map()], ]
         map = leaflet(data = dispatch_subset) %>% addTiles() %>%
                 # Include the call type description as a pop-up and the location 
                 # as a label
@@ -124,7 +204,7 @@ server <- function(input, output, session) {
   })
 
   
-  # Time Distribution
+  # * Time Distribution Output ----
   output$time_distribution = renderPlot({
     req(filtered_dispatch_data())
    
@@ -138,12 +218,16 @@ server <- function(input, output, session) {
     end_time_column = paste0(time_values[which(time_choices == input$time_range[2])], 
                              "_date_time")
     
-    times = as.numeric(difftime(filtered_dispatch_data()[, end_time_column], 
-                                filtered_dispatch_data()[, start_time_column],
+    times = as.numeric(difftime(time_filtered_dispatch_data()[, end_time_column], 
+                                time_filtered_dispatch_data()[, start_time_column],
                                 units = "mins"))
     
-    # Create a histogram of all response times less than 24 hours
-    hist(times[times < 1440])
+    # Create a histogram of all response times less than 1 hour
+    plotted_times = times[times < 60]
+    hist(plotted_times,
+         freq = FALSE,
+         xlab = 'Response Time (Minutes)')
+    lines(density(plotted_times))
   })
   
 }

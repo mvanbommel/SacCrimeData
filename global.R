@@ -1,15 +1,17 @@
-library(DT)
-library(leaflet)
-library(dplyr)
-library(shinyWidgets)
+library(DT, warn.conflicts = FALSE, quietly = TRUE)
+library(leaflet, warn.conflicts = FALSE, quietly = TRUE)
+library(dplyr, warn.conflicts = FALSE, quietly = TRUE)
+library(shinyWidgets, warn.conflicts = FALSE, quietly = TRUE)
+library(ggplot2, warn.conflicts = FALSE, quietly = TRUE)
 
 
 # To do:
-# - add more information (date) to markers
+# - add more information (time, date, response time) to markers
 # - location search/filter
 # - make time histogram dynamic
 #   - input values for x range?
-#   - https://gallery.shinyapps.io/105-plot-interaction-zoom/
+#   - change to GGplot distributions
+#   - allow users to save, name, and add lines to plot
 
 
 
@@ -32,10 +34,11 @@ missing_data_index = function(column_name, dispatch_data) {
     which((gsub("^\\s+|\\s+$", "", substr(as.character(column), 1, 10)) %in% 
              c('', '1899-01-01')))
     
+    # Need to round to 3 decimal places for the equality check to work
   } else if (type == 'longitude') {
-    which(dispatch_data[, column_name] == -142.954)
+    which(round(dispatch_data[, column_name], 3) == -142.954)
   } else if (type == 'latitude') {
-    which(dispatch_data[, column_name] == 31.096)
+    which(round(dispatch_data[, column_name], 3) == 31.096)
   } else {
     stop(paste0('Column: ', column_name, 
                 'not applicable for missing_data_index()'))
@@ -92,40 +95,6 @@ dispatch_data = dispatch_data %>%
          'latitude' = Y,
          'report_created' = Report_Created)
 
-# Remove rows with locations outside of Sacramento
-dispatch_data = dispatch_data[-which(dispatch_data$latitude < 38 | 
-                                       dispatch_data$latitude > 39 | 
-                                       dispatch_data$longitude < -122 | 
-                                       dispatch_data$longitude > -121), ]
-
-
-# Remove rows with missing time/date information, or missing latitude/longitude
-time_points = c('occurence', 
-                'received', 
-                'dispatch', 
-                'enroute', 
-                'at_scene', 
-                'clear')
-
-missing_time_index = lapply(paste0(time_points, '_time'), 
-                            missing_data_index, 
-                            dispatch_data)
-missing_date_index = lapply(paste0(time_points, '_date'), 
-                            missing_data_index, 
-                            dispatch_data)
-
-any_time_missing = Reduce(union, missing_time_index)
-any_date_missing = Reduce(union, missing_date_index)
-
-missing_latitude_index = missing_data_index('latitude', dispatch_data)
-missing_longitude_index = missing_data_index('longitude', dispatch_data)
-
-any_data_missing = Reduce(union, list(any_time_missing, any_date_missing, 
-                                      missing_latitude_index, 
-                                      missing_longitude_index))
-
-dispatch_data = dispatch_data[-any_data_missing, ]
-
 # Convert separate date and time columns to combined date-time columns
 for (name in time_points) {
   dispatch_data = convert_to_date_time(name, dispatch_data)
@@ -163,6 +132,8 @@ any_crime_group_index = unique(unlist(lapply(description_crime_groups,
                                              grep, 
                                              all_descriptions)))
 other_crime_descriptions = all_descriptions[-any_crime_group_index]
+
+number_total_observations = nrow(dispatch_data)
 
 
 

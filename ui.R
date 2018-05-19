@@ -7,7 +7,7 @@ shinyUI(
     tabPanel("Map", id="map_tab",
       fluidRow(
         leafletOutput("dispatch_map"),
-        textOutput("points_displayed_message"),
+        htmlOutput("points_displayed_message"),
         actionButton("new_points", "New points")
       ),
       fluidRow(
