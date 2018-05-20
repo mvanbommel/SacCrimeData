@@ -16,7 +16,7 @@ library(ggplot2, warn.conflicts = FALSE, quietly = TRUE)
 
 
 
-# Functions ----
+# FUNCTIONS ----
 missing_data_index = function(column_name, dispatch_data) {
   if (grepl('date', column_name)) {
     type = 'date'
@@ -47,17 +47,22 @@ missing_data_index = function(column_name, dispatch_data) {
 }
 
 convert_to_date_time <- function(date_time_name, dispatch_data) {
-  dispatch_data[, paste0(date_time_name, '_date_time')] = as.POSIXct(paste0(substr(dispatch_data[, paste0(date_time_name, '_date')], 
+  complete_data_index = which(!is.na(dispatch_data[, paste0(date_time_name, '_date')]) & !is.na(dispatch_data[, paste0(date_time_name, '_time')])) 
+  
+  # Create an empty date time columns (necessary to keep from conversion to numeric)
+  dispatch_data[, paste0(date_time_name, '_date_time')] = as.POSIXct(matrix(nrow=nrow(dispatch_data), ncol=1))
+  
+  dispatch_data[complete_data_index, paste0(date_time_name, '_date_time')] = as.POSIXct(paste0(substr(dispatch_data[complete_data_index, paste0(date_time_name, '_date')], 
                                                                                    1, 10),
-                                                                            ' ', 
-                                                                            dispatch_data[, paste0(date_time_name, '_time')]))
-  dispatch_data = dispatch_data[, -which(colnames(dispatch_data) %in% c(paste0(date_time_name, '_date'), 
+                                                                                   ' ', 
+                                                                                   dispatch_data[complete_data_index, paste0(date_time_name, '_time')]))
+  dispatch_data = dispatch_data[, -which(colnames(dispatch_data) %in% c(paste0(date_time_name, '_date'),
                                                                         paste0(date_time_name, '_time')))]
   dispatch_data
 }
 
 
-# Read Data ----
+# READ DATA ----
 dispatch_data = read.csv('Sacramento_Dispatch_Data_From_Current_Year.csv', 
                          stringsAsFactors = FALSE)
 colnames(dispatch_data)[1] = 'X'
@@ -95,7 +100,41 @@ dispatch_data = dispatch_data %>%
          'latitude' = Y,
          'report_created' = Report_Created)
 
-# Convert separate date and time columns to combined date-time columns
+# * Missing Data to NA ----
+# Latitude and Longitude
+missing_latitude_index = missing_data_index('latitude', dispatch_data)
+missing_longitude_index = missing_data_index('longitude', dispatch_data)
+
+if (length(missing_latitude_index) > 0) {
+  dispatch_data[missing_latitude_index, 'latitude'] = NA
+}
+
+if (length(missing_longitude_index) > 0) {
+  dispatch_data[missing_longitude_index, 'longitude'] = NA
+}
+
+# Dates and Times
+time_points = c('occurence', 
+                'received', 
+                'dispatch', 
+                'enroute', 
+                'at_scene', 
+                'clear')
+
+for (name in time_points) {
+  missing_time_index = missing_data_index(paste0(name, '_time'), dispatch_data)
+  missing_date_index = missing_data_index(paste0(name, '_date'), dispatch_data)
+  
+  if (length(missing_time_index) > 0) {
+    dispatch_data[missing_time_index, paste0(name, '_time')] = NA
+  }
+  if (length(missing_date_index) > 0) {
+    dispatch_data[missing_date_index, paste0(name, '_date')] = NA
+  }
+}
+
+
+# * Create Date-Time Columns ----
 for (name in time_points) {
   dispatch_data = convert_to_date_time(name, dispatch_data)
 }

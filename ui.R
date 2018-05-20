@@ -57,6 +57,13 @@ shinyUI(
                         selected = c("Occurence", "Clear"))
 
       ),
+
+      fluidRow(
+        numericInput("time_distribution_plot_minimum_x", h3("Min Time"),
+                     value = 0, min = 0, max = 1440, step = 15),
+        numericInput("time_distribution_plot_maximum_x", h3("Max Time"),
+                     value = 60, min = 0, max = 1440, step = 15)
+      ),
       
       plotOutput("time_distribution")
 

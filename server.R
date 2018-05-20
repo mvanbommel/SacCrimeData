@@ -82,8 +82,8 @@ server <- function(input, output, session) {
   
   # ** Map ----
   map_filtered_dispatch_data = reactive({
-    missing_latitude_index = missing_data_index('latitude', filtered_dispatch_data())
-    missing_longitude_index = missing_data_index('longitude', filtered_dispatch_data())
+    missing_latitude_index = which(is.na(filtered_dispatch_data()$latitude))
+    missing_longitude_index = which(is.na(filtered_dispatch_data()$longitude))
     
     any_data_missing = Reduce(union, list(missing_latitude_index, 
                                           missing_longitude_index))
@@ -116,8 +116,8 @@ server <- function(input, output, session) {
     end_time_column = paste0(time_values[which(time_choices == input$time_range[2])], 
                              "_date_time")
     
-    missing_start_time_index = missing_data_index(start_time_column, filtered_dispatch_data())
-    missing_end_time_index = missing_data_index(end_time_column, filtered_dispatch_data())
+    missing_start_time_index = which(is.na(filtered_dispatch_data()[, start_time_column]))
+    missing_end_time_index = which(is.na(filtered_dispatch_data()[, end_time_column]))
     
     any_data_missing = Reduce(union, list(missing_start_time_index, 
                                           missing_end_time_index))
