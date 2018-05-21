@@ -62,7 +62,11 @@ shinyUI(
         numericInput("time_distribution_plot_minimum_x", h3("Min Time"),
                      value = 0, min = 0, max = 1440, step = 15),
         numericInput("time_distribution_plot_maximum_x", h3("Max Time"),
-                     value = 60, min = 0, max = 1440, step = 15)
+                     value = 60, min = 0, max = 1440, step = 15),
+        checkboxInput("plot_current_distribution", h3("Plot Current Line"), value = TRUE, width = NULL),
+        textInput("new_time_distribution_name", h3("New Line"), value = "", width = NULL, placeholder = 'New Line Name'),
+        actionButton("save_new_time_distribution", h3("Save Line"), icon = NULL, width = NULL),
+        actionButton("reset_time_distribution_plot", h3("Reset Plot"), icon = NULL, width = NULL)
       ),
       
       plotOutput("time_distribution")

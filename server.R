@@ -205,9 +205,14 @@ server <- function(input, output, session) {
 
   
   # * Time Distribution Output ----
-  output$time_distribution = renderPlot({
+  # Initialize values for the saved time distributions
+  reactive_values = reactiveValues(saved_time_distributions = list(), 
+                                   saved_time_distribution_number = 1)
+  
+  # Get the distribution for the currently selected input values
+  new_time_distribution = reactive({
     req(filtered_dispatch_data())
-   
+    
     time_choices = c("Occurence", "Received", "Dispatch", 
                      "Enroute", "At Scene", "Clear")
     time_values = c("occurence", "received", "dispatch",
@@ -222,12 +227,60 @@ server <- function(input, output, session) {
                                 time_filtered_dispatch_data()[, start_time_column],
                                 units = "mins"))
     
-    # Create a histogram of all response times less than 1 hour
-    plotted_times = times[times < 60]
-    hist(plotted_times,
-         freq = FALSE,
-         xlab = 'Response Time (Minutes)')
-    lines(density(plotted_times))
+    # Use the distribution name input as the label in the legend
+    distribution = data.frame(time = times, line = input$new_time_distribution_name)
+    
+    distribution
+  })
+  
+  # Save the current distributions (adds to any previously saved distributions)
+  observeEvent(input$save_new_time_distribution, {
+    reactive_values$saved_time_distributions[[reactive_values$saved_time_distribution_number]] = new_time_distribution()
+    reactive_values$saved_time_distribution_number = reactive_values$saved_time_distribution_number + 1
+  })
+  
+  # Reset the saved distributions
+  observeEvent(input$reset_time_distribution_plot, {
+    reactive_values$saved_time_distributions = list()
+    reactive_values$saved_time_distribution_number = 1
+  })
+  
+  output$time_distribution = renderPlot({
+    req(filtered_dispatch_data())
+   
+    saved_time_distributions = reactive_values$saved_time_distributions
+    
+    if (length(saved_time_distributions) == 0) {
+      # If no distributions are saved:
+      if(input$plot_current_distribution) {
+        # Show distribution from current inputs
+        saved_time_distributions = list(new_time_distribution())
+      } else {
+        # Shot no plot
+        saved_time_distributions = list()
+      }
+    } else {
+      if(input$plot_current_distribution) {
+        # Also show distribution from current inputs
+        saved_time_distributions[[reactive_values$saved_time_distribution_number]] = new_time_distribution()
+      } 
+    }
+   
+    plot = ggplot()
+    if (length(saved_time_distributions) > 0) {
+      for (i in 1:length(saved_time_distributions)) {
+        data = saved_time_distributions[[i]]
+        
+        # Filter data based on the selected time range
+        plotted_data = data[which(data$time > input$time_distribution_plot_minimum_x & 
+                                  data$time < input$time_distribution_plot_maximum_x), ] 
+        
+        plot = plot + 
+          geom_density(data = plotted_data, aes(x=time, fill=line), alpha=.3)
+      }
+    }
+
+    plot
   })
   
 }

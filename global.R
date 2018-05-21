@@ -6,12 +6,12 @@ library(ggplot2, warn.conflicts = FALSE, quietly = TRUE)
 
 
 # To do:
+# - FIX DAY OF WEEK ERROR
 # - add more information (time, date, response time) to markers
 # - location search/filter
 # - make time histogram dynamic
-#   - input values for x range?
-#   - change to GGplot distributions
-#   - allow users to save, name, and add lines to plot
+#   - fix deafult line names (before and after a line is added)
+#   - input to switch between density and frequency
 
 
 
@@ -147,6 +147,10 @@ dispatch_data[, 'occurence_date'] = as.Date(dispatch_data$occurence_date_time,
 
 
 # Variables ----
+time_distribution_plot = ggplot()
+# saved_time_distributions = list()
+saved_distribution_number = 1
+
 all_descriptions = sort(unique(dispatch_data$call_type_description))
 description_time_groups = c('IN PROGRESS', 
                             'LESS THAN 5 AGO', 
