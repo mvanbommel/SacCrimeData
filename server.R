@@ -56,18 +56,12 @@ server <- function(input, output, session) {
     
     
     # Only filter occurence times and day of the week if the user changes the default
-    if (!all.equal(input$occurence_time_range, c(0, 24))) {
+    if (!all(input$occurence_time_range == c(0, 24))) {
       filtered_dispatch_data = filtered_dispatch_data %>%
         filter(occurence_time > input$occurence_time_range[1] & 
                  occurence_time < input$occurence_time_range[2])
     }
-    if (!all.equal(input$day_of_week, c('Sunday', 
-                                        'Monday', 
-                                        'Tuesday', 
-                                        'Wednesday', 
-                                        'Thursday', 
-                                        'Friday', 
-                                        'Saturday'))) {
+    if (length(input$day_of_week) != 7) {
       filtered_dispatch_data = filtered_dispatch_data %>%
         filter(day_of_week %in% input$day_of_week)
     }
