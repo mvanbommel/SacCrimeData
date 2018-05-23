@@ -6,9 +6,10 @@ library(ggplot2, warn.conflicts = FALSE, quietly = TRUE)
 
 
 # To do:
-# - FIX DAY OF WEEK ERROR
+# improve map
+# - map search? https://redoakstrategic.com/geoshaper/
+# - map appearance https://uasnap.shinyapps.io/ex_leaflet/
 # - add more information (time, date, response time) to markers
-# - location search/filter
 # - make time histogram dynamic
 #   - fix deafult line names (before and after a line is added)
 #   - input to switch between density and frequency
