@@ -1,5 +1,3 @@
-library(shiny)
-
 shinyUI(
   navbarPage("Sacramento Dispatch Data", id = "dispatch_data",
     

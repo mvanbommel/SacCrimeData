@@ -36,6 +36,13 @@ server <- function(input, output, session) {
   
   
   # Map ----
+  # * Variables ----
+  # List to store selected map points
+  map_reactive_values <- reactiveValues(selected_points = list())
+  
+  dispatch_data_coordinates = reactive({
+    SpatialPointsDataFrame(map_filtered_dispatch_data()[,c('longitude', 'latitude')] , map_filtered_dispatch_data()[, c('latitude', 'longitude', 'id', 'selected_id')])
+  })
   
   # * Filtering the Data ----
   # ** Inputs ----
@@ -170,6 +177,7 @@ server <- function(input, output, session) {
   })
   
   # * Map Output ----
+  # ** Default Map ----
   output$dispatch_map = renderLeaflet({
     # Deafult to a blank map   
     map = leaflet() %>%
@@ -185,16 +193,94 @@ server <- function(input, output, session) {
         # Generate the subset of points to display and place them on the map 
         dispatch_subset = map_filtered_dispatch_data()[random_order()[1:points_on_map()], ]
         map = leaflet(data = dispatch_subset) %>% addTiles() %>%
-                # Include the call type description as a pop-up and the location 
-                # as a label
-                addMarkers(~dispatch_subset$longitude, 
-                           ~dispatch_subset$latitude, 
-                           popup = ~as.character(dispatch_subset$call_type_description), 
-                           label = ~as.character(dispatch_subset$location))
+          addTiles() %>%
+          # Include the call type description as a pop-up and the location 
+          # as a label
+          addCircles(~dispatch_subset$longitude, 
+                     ~dispatch_subset$latitude, 
+                     popup = ~as.character(dispatch_subset$call_type_description), 
+                     label = ~as.character(dispatch_subset$location),
+                     stroke = TRUE,
+                     layerId = as.character(dispatch_subset$id),
+                     highlightOptions = highlightOptions(color = "mediumseagreen",
+                                                         bringToFront = TRUE)) %>%
+          addDrawToolbar(
+            targetGroup='Selected',
+            polylineOptions=FALSE,
+            markerOptions = FALSE,
+            polygonOptions = drawPolygonOptions(shapeOptions=drawShapeOptions(fillOpacity = 0
+                                                                              ,color = 'white'
+                                                                              ,weight = 3)),
+            rectangleOptions = drawRectangleOptions(shapeOptions=drawShapeOptions(fillOpacity = 0
+                                                                                  ,color = 'white'
+                                                                                  ,weight = 3)),
+            circleOptions = drawCircleOptions(shapeOptions = drawShapeOptions(fillOpacity = 0
+                                                                              ,color = 'white'
+                                                                              ,weight = 3)),
+            editOptions = editToolbarOptions(edit = FALSE, selectedPathOptions = selectedPathOptions()))
       }
     }
   
     map
+  })
+  
+  # ** Selecting Map Points ----
+  observeEvent(input$dispatch_map_draw_new_feature,{
+    #Only add new layers for bounded locations
+    selected_ids <- findLocations(shape = input$dispatch_map_draw_new_feature,
+                                  location_coordinates = dispatch_data_coordinates(),
+                                  location_id_colname = "id")
+    
+    for(id in selected_ids){
+      if(id %in% map_reactive_values$selected_points){
+        # don't add id
+      } else {
+        # add id
+        map_reactive_values$selected_points <- append(map_reactive_values$selected_points, id, 0)
+      }
+    }
+    
+    # look up points by ids found
+    selected_dispatch_data <- subset(filtered_dispatch_data(), id %in% map_reactive_values$selected_points)
+    
+    proxy <- leafletProxy("dispatch_map") %>%
+      addCircles(data = selected_dispatch_data,
+                 ~selected_dispatch_data$longitude,
+                 ~selected_dispatch_data$latitude,
+                 popup = ~as.character(selected_dispatch_data$call_type_description),
+                 label = ~as.character(selected_dispatch_data$location),
+                 fillColor = "wheat",
+                 fillOpacity = 1,
+                 color = "mediumseagreen",
+                 weight = 3,
+                 stroke = T,
+                 layerId = as.character(selected_dispatch_data$selected_id),
+                 highlightOptions = highlightOptions(color = "hotpink",
+                                                     opacity = 1.0,
+                                                     weight = 2,
+                                                     bringToFront = TRUE))
+  })
+  
+  # ** Removing Selected Map Points ----
+  observeEvent(input$dispatch_map_draw_new_feature,{
+    # loop through list of one or more deleted features/ polygons
+    for(feature in input$dispatch_map_draw_new_feature$features){
+      
+      # get ids for locations within the bounding shape
+      bounded_layer_ids <- findLocations(shape = feature, 
+                                         location_coordinates = dispatch_data_coordinates(), 
+                                         location_id_colname = "selected_id")
+      
+      
+      # remove second layer representing selected locations
+      proxy <- leafletProxy("dispatch_map") %>% 
+        removeShape(layerId = as.character(bounded_layer_ids))
+      
+      first_layer_ids <- subset(filtered_dispatch_data(), selected_id %in% bounded_layer_ids)$id
+      
+      map_reactive_values$selected_points <- map_reactive_values$selected_points[!map_reactive_values$selected_points
+                                                                 %in% first_layer_ids]
+    }
   })
 
   

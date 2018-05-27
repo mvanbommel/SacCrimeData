@@ -1,5 +1,8 @@
+library(shiny, warn.conflicts = FALSE, quietly = TRUE)
 library(DT, warn.conflicts = FALSE, quietly = TRUE)
 library(leaflet, warn.conflicts = FALSE, quietly = TRUE)
+library(leaflet.extras, warn.conflicts = FALSE, quietly = TRUE)
+library(sp, warn.conflicts = FALSE, quietly = TRUE)
 library(dplyr, warn.conflicts = FALSE, quietly = TRUE)
 library(shinyWidgets, warn.conflicts = FALSE, quietly = TRUE)
 library(ggplot2, warn.conflicts = FALSE, quietly = TRUE)
@@ -62,6 +65,91 @@ convert_to_date_time <- function(date_time_name, dispatch_data) {
   dispatch_data
 }
 
+# function for finding the locations inside the shapes we draw
+findLocations <- function(shape, location_coordinates, location_id_colname){
+  
+  # derive polygon coordinates and feature_type from shape input
+  polygon_coordinates <- shape$geometry$coordinates
+  feature_type <- shape$properties$feature_type
+  
+  if(feature_type %in% c("rectangle","polygon")) {
+    
+    # transform into a spatial polygon
+    drawn_polygon <- Polygon(do.call(rbind,lapply(polygon_coordinates[[1]],function(x){c(x[[1]][1],x[[2]][1])})))
+    
+    # use 'over' from the sp package to identify selected locations
+    selected_locs <- sp::over(location_coordinates
+                              , sp::SpatialPolygons(list(sp::Polygons(list(drawn_polygon),"drawn_polygon"))))
+    
+    # get location ids
+    x = (location_coordinates[which(!is.na(selected_locs)), location_id_colname])
+    
+    selected_loc_id = as.character(x[[location_id_colname]])
+    
+    return(selected_loc_id)
+    
+  } else if (feature_type == "circle") {
+    
+    center_coords <- matrix(c(polygon_coordinates[[1]], polygon_coordinates[[2]])
+                            , ncol = 2)
+    
+    # get distances to center of drawn circle for all locations in location_coordinates
+    # distance is in kilometers
+    dist_to_center <- spDistsN1(location_coordinates, center_coords, longlat=TRUE)
+    
+    # get location ids
+    # radius is in meters
+    x <- location_coordinates[dist_to_center < shape$properties$radius/1000, location_id_colname]
+    
+    selected_loc_id = as.character(x[[location_id_colname]])
+    
+    return(selected_loc_id)
+  }
+}
+
+
+# Taken from: https://redoakstrategic.com/geoshaper/
+# function for finding the locations inside the shapes we draw
+findLocations <- function(shape, location_coordinates, location_id_colname){
+  
+  # derive polygon coordinates and feature_type from shape input
+  polygon_coordinates <- shape$geometry$coordinates
+  feature_type <- shape$properties$feature_type
+  
+  if(feature_type %in% c("rectangle","polygon")) {
+    
+    # transform into a spatial polygon
+    drawn_polygon <- Polygon(do.call(rbind,lapply(polygon_coordinates[[1]],function(x){c(x[[1]][1],x[[2]][1])})))
+    
+    # use 'over' from the sp package to identify selected locations
+    selected_locs <- sp::over(location_coordinates
+                              , sp::SpatialPolygons(list(sp::Polygons(list(drawn_polygon),"drawn_polygon"))))
+    
+    # get location ids
+    x = (location_coordinates[which(!is.na(selected_locs)), location_id_colname])
+    
+    selected_loc_id = as.character(x[[location_id_colname]])
+    
+    return(selected_loc_id)
+    
+  } else if (feature_type == "circle") {
+    
+    center_coords <- matrix(c(polygon_coordinates[[1]], polygon_coordinates[[2]])
+                            , ncol = 2)
+    
+    # get distances to center of drawn circle for all locations in location_coordinates
+    # distance is in kilometers
+    dist_to_center <- spDistsN1(location_coordinates, center_coords, longlat=TRUE)
+    
+    # get location ids
+    # radius is in meters
+    x <- location_coordinates[dist_to_center < shape$properties$radius/1000, location_id_colname]
+    
+    selected_loc_id = as.character(x[[location_id_colname]])
+    
+    return(selected_loc_id)
+  }
+}
 
 # READ DATA ----
 dispatch_data = read.csv('Sacramento_Dispatch_Data_From_Current_Year.csv', 
@@ -148,8 +236,10 @@ dispatch_data[, 'occurence_date'] = as.Date(dispatch_data$occurence_date_time,
 
 
 # Variables ----
+dispatch_data$id = 1:nrow(dispatch_data)
+dispatch_data$selected_id = paste0('selected_', dispatch_data$id)
+
 time_distribution_plot = ggplot()
-# saved_time_distributions = list()
 saved_distribution_number = 1
 
 all_descriptions = sort(unique(dispatch_data$call_type_description))
