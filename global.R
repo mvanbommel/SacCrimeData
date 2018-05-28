@@ -11,6 +11,8 @@ library(ggplot2, warn.conflicts = FALSE, quietly = TRUE)
 # To do:
 # improve map
 # - map search? https://redoakstrategic.com/geoshaper/
+#   - check all shapes are working
+#   - fix clear button
 # - map appearance https://uasnap.shinyapps.io/ex_leaflet/
 # - add more information (time, date, response time) to markers
 # - make time histogram dynamic
@@ -236,7 +238,7 @@ dispatch_data[, 'occurence_date'] = as.Date(dispatch_data$occurence_date_time,
 
 
 # Variables ----
-dispatch_data$id = 1:nrow(dispatch_data)
+dispatch_data$id = as.character(1:nrow(dispatch_data))
 dispatch_data$selected_id = paste0('selected_', dispatch_data$id)
 
 time_distribution_plot = ggplot()

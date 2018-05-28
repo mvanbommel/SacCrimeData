@@ -40,9 +40,9 @@ server <- function(input, output, session) {
   # List to store selected map points
   map_reactive_values <- reactiveValues(selected_points = list())
   
-  dispatch_data_coordinates = reactive({
-    SpatialPointsDataFrame(map_filtered_dispatch_data()[,c('longitude', 'latitude')] , map_filtered_dispatch_data()[, c('latitude', 'longitude', 'id', 'selected_id')])
-  })
+  # dispatch_data_coordinates = reactive({
+  #   SpatialPointsDataFrame(map_filtered_dispatch_data()[,c('longitude', 'latitude')] , map_filtered_dispatch_data()[, c('latitude', 'longitude', 'id', 'selected_id')])
+  # })
   
   # * Filtering the Data ----
   # ** Inputs ----
@@ -103,6 +103,37 @@ server <- function(input, output, session) {
     nrow(map_filtered_dispatch_data())
   })
   
+  # ** Shapes ----
+  # Filter in drawn shapes, if a drawn shape exists
+  shape_filtered_dispatch_data = reactive({
+    shape_filtered_dispatch_data = map_filtered_dispatch_data()
+    if (length(input$dispatch_map_draw_new_feature) > 0) {
+      filtered_dispatch_data_coordinates = SpatialPointsDataFrame(shape_filtered_dispatch_data[,c('longitude', 'latitude')], shape_filtered_dispatch_data[, c('latitude', 'longitude', 'id', 'selected_id')])
+      selected_ids <- findLocations(shape = input$dispatch_map_draw_new_feature,
+                                    location_coordinates = filtered_dispatch_data_coordinates,
+                                    location_id_colname = "id")
+      
+      for(id in selected_ids){
+        if(id %in% map_reactive_values$selected_points){
+          # don't add id
+        } else {
+          # add id
+          map_reactive_values$selected_points <- append(map_reactive_values$selected_points, id, 0)
+        }
+      }
+      
+      # look up points by ids found
+      shape_filtered_dispatch_data <- subset(shape_filtered_dispatch_data, id %in% map_reactive_values$selected_points)
+    }
+    
+    shape_filtered_dispatch_data
+  })
+  
+  # Compute the number of observations in the shape filtered data
+  number_shape_filtered_observations = reactive({
+    nrow(shape_filtered_dispatch_data())
+  })
+  
   # ** Times ----
   time_filtered_dispatch_data = reactive({
     req(input$time_range)
@@ -140,12 +171,12 @@ server <- function(input, output, session) {
   
   # Determine how many points to display on the map
   points_on_map = reactive({
-    req(input$points_on_map, number_map_filtered_observations())
+    req(input$points_on_map, number_shape_filtered_observations())
     
     # If the user selects more points than are available, display the maximum 
     # number of points available
-    if (input$points_on_map > number_map_filtered_observations()) {
-      points_on_map = number_map_filtered_observations()
+    if (input$points_on_map > number_shape_filtered_observations()) {
+      points_on_map = number_shape_filtered_observations()
     } else {
       points_on_map = input$points_on_map
     }
@@ -162,7 +193,7 @@ server <- function(input, output, session) {
                  " entries with location data. <br/>",
                  number_filtered_observations() - number_map_filtered_observations(),
                  " additional entries are missing location data. <br/>",
-                 number_total_observations - number_filtered_observations(),
+                 number_total_observations - number_filtered_observations() - (number_map_filtered_observations() - number_shape_filtered_observations()),
                  " additional observations do not meet the selected requirements."))
   })
   
@@ -171,8 +202,8 @@ server <- function(input, output, session) {
   random_order = reactive({
     refresh = input$new_points
     
-    random_order = sample(1:number_filtered_observations(), 
-                          size=number_filtered_observations(), 
+    random_order = sample(1:number_shape_filtered_observations(), 
+                          size=number_shape_filtered_observations(), 
                           replace=FALSE)
   })
   
@@ -191,8 +222,9 @@ server <- function(input, output, session) {
         # observations:
         
         # Generate the subset of points to display and place them on the map 
-        dispatch_subset = map_filtered_dispatch_data()[random_order()[1:points_on_map()], ]
-        map = leaflet(data = dispatch_subset) %>% addTiles() %>%
+        dispatch_subset = shape_filtered_dispatch_data()[random_order()[1:points_on_map()], ]
+        
+        map = leaflet(data = dispatch_subset) %>% 
           addTiles() %>%
           # Include the call type description as a pop-up and the location 
           # as a label
@@ -222,65 +254,6 @@ server <- function(input, output, session) {
     }
   
     map
-  })
-  
-  # ** Selecting Map Points ----
-  observeEvent(input$dispatch_map_draw_new_feature,{
-    #Only add new layers for bounded locations
-    selected_ids <- findLocations(shape = input$dispatch_map_draw_new_feature,
-                                  location_coordinates = dispatch_data_coordinates(),
-                                  location_id_colname = "id")
-    
-    for(id in selected_ids){
-      if(id %in% map_reactive_values$selected_points){
-        # don't add id
-      } else {
-        # add id
-        map_reactive_values$selected_points <- append(map_reactive_values$selected_points, id, 0)
-      }
-    }
-    
-    # look up points by ids found
-    selected_dispatch_data <- subset(filtered_dispatch_data(), id %in% map_reactive_values$selected_points)
-    
-    proxy <- leafletProxy("dispatch_map") %>%
-      addCircles(data = selected_dispatch_data,
-                 ~selected_dispatch_data$longitude,
-                 ~selected_dispatch_data$latitude,
-                 popup = ~as.character(selected_dispatch_data$call_type_description),
-                 label = ~as.character(selected_dispatch_data$location),
-                 fillColor = "wheat",
-                 fillOpacity = 1,
-                 color = "mediumseagreen",
-                 weight = 3,
-                 stroke = T,
-                 layerId = as.character(selected_dispatch_data$selected_id),
-                 highlightOptions = highlightOptions(color = "hotpink",
-                                                     opacity = 1.0,
-                                                     weight = 2,
-                                                     bringToFront = TRUE))
-  })
-  
-  # ** Removing Selected Map Points ----
-  observeEvent(input$dispatch_map_draw_new_feature,{
-    # loop through list of one or more deleted features/ polygons
-    for(feature in input$dispatch_map_draw_new_feature$features){
-      
-      # get ids for locations within the bounding shape
-      bounded_layer_ids <- findLocations(shape = feature, 
-                                         location_coordinates = dispatch_data_coordinates(), 
-                                         location_id_colname = "selected_id")
-      
-      
-      # remove second layer representing selected locations
-      proxy <- leafletProxy("dispatch_map") %>% 
-        removeShape(layerId = as.character(bounded_layer_ids))
-      
-      first_layer_ids <- subset(filtered_dispatch_data(), selected_id %in% bounded_layer_ids)$id
-      
-      map_reactive_values$selected_points <- map_reactive_values$selected_points[!map_reactive_values$selected_points
-                                                                 %in% first_layer_ids]
-    }
   })
 
   
