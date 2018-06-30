@@ -6,6 +6,7 @@ library(sp, warn.conflicts = FALSE, quietly = TRUE)
 library(dplyr, warn.conflicts = FALSE, quietly = TRUE)
 library(shinyWidgets, warn.conflicts = FALSE, quietly = TRUE)
 library(ggplot2, warn.conflicts = FALSE, quietly = TRUE)
+library(ggthemes, warn.conflicts = FALSE, quietly = TRUE)
 
 
 # To do:
@@ -18,6 +19,7 @@ library(ggplot2, warn.conflicts = FALSE, quietly = TRUE)
 # - make time histogram dynamic
 #   - fix deafult line names (before and after a line is added)
 #   - input to switch between density and frequency
+#   - error message for over 100 distributions
 
 
 
@@ -243,6 +245,17 @@ dispatch_data$selected_id = paste0('selected_', dispatch_data$id)
 
 time_distribution_plot = ggplot()
 saved_distribution_number = 1
+time_distribution_colors = rep(c('blue',
+                                 'red', 
+                                 'yellow',
+                                 'green',
+                                 'purple',
+                                 'cyan',
+                                 'saddlebrown',
+                                 'darkgreen',
+                                 'beige',
+                                 'black'),
+                               10)
 
 all_descriptions = sort(unique(dispatch_data$call_type_description))
 description_time_groups = c('IN PROGRESS', 

@@ -7,6 +7,17 @@ server <- function(input, output, session) {
                  min=0, max=100, value = 25)
   })
   
+  # Input for the name of the new time distribution plotted
+  line_number = reactiveValues(number = 1)
+  
+  output$new_time_distribution_name = renderUI({
+    textInput("new_time_distribution_name", 
+              h3("New Line"), 
+              value = paste0("Line ", line_number$number), 
+              width = NULL, 
+              placeholder = 'New Line Name')
+  })
+  
   output$call_type_description = renderUI({
     
     choice_list = sort(all_descriptions[unique(unlist(lapply(input$description_groups, 
@@ -108,7 +119,12 @@ server <- function(input, output, session) {
   shape_filtered_dispatch_data = reactive({
     shape_filtered_dispatch_data = map_filtered_dispatch_data()
     if (length(input$dispatch_map_draw_new_feature) > 0) {
-      filtered_dispatch_data_coordinates = SpatialPointsDataFrame(shape_filtered_dispatch_data[,c('longitude', 'latitude')], shape_filtered_dispatch_data[, c('latitude', 'longitude', 'id', 'selected_id')])
+      filtered_dispatch_data_coordinates = SpatialPointsDataFrame(shape_filtered_dispatch_data[,c('longitude', 
+                                                                                                  'latitude')], 
+                                                                  shape_filtered_dispatch_data[, c('latitude', 
+                                                                                                   'longitude', 
+                                                                                                   'id', 
+                                                                                                   'selected_id')])
       selected_ids <- findLocations(shape = input$dispatch_map_draw_new_feature,
                                     location_coordinates = filtered_dispatch_data_coordinates,
                                     location_id_colname = "id")
@@ -118,7 +134,9 @@ server <- function(input, output, session) {
           # don't add id
         } else {
           # add id
-          map_reactive_values$selected_points <- append(map_reactive_values$selected_points, id, 0)
+          map_reactive_values$selected_points <- append(map_reactive_values$selected_points, 
+                                                        id, 
+                                                        0)
         }
       }
       
@@ -240,15 +258,15 @@ server <- function(input, output, session) {
             targetGroup='Selected',
             polylineOptions=FALSE,
             markerOptions = FALSE,
-            polygonOptions = drawPolygonOptions(shapeOptions=drawShapeOptions(fillOpacity = 0
-                                                                              ,color = 'white'
-                                                                              ,weight = 3)),
-            rectangleOptions = drawRectangleOptions(shapeOptions=drawShapeOptions(fillOpacity = 0
-                                                                                  ,color = 'white'
-                                                                                  ,weight = 3)),
-            circleOptions = drawCircleOptions(shapeOptions = drawShapeOptions(fillOpacity = 0
-                                                                              ,color = 'white'
-                                                                              ,weight = 3)),
+            polygonOptions = drawPolygonOptions(shapeOptions=drawShapeOptions(fillOpacity = 0,
+                                                                              color = 'white',
+                                                                              weight = 3)),
+            rectangleOptions = drawRectangleOptions(shapeOptions=drawShapeOptions(fillOpacity = 0,
+                                                                                  color = 'white',
+                                                                                  weight = 3)),
+            circleOptions = drawCircleOptions(shapeOptions = drawShapeOptions(fillOpacity = 0,
+                                                                              color = 'white',
+                                                                              weight = 3)),
             editOptions = editToolbarOptions(edit = FALSE, selectedPathOptions = selectedPathOptions()))
       }
     }
@@ -318,18 +336,27 @@ server <- function(input, output, session) {
         saved_time_distributions[[reactive_values$saved_time_distribution_number]] = new_time_distribution()
       } 
     }
-   
+
     plot = ggplot()
+    data = NULL
     if (length(saved_time_distributions) > 0) {
+      # Update the line_number reactive value for the new_time_distribution_name input
+      line_number$number = length(saved_time_distributions) 
+      
       for (i in 1:length(saved_time_distributions)) {
-        data = saved_time_distributions[[i]]
-        
-        # Filter data based on the selected time range
-        plotted_data = data[which(data$time > input$time_distribution_plot_minimum_x & 
+        data = rbind(data, saved_time_distributions[[i]])
+      }
+      
+      # Filter data based on the selected time range
+      plotted_data = data[which(data$time > input$time_distribution_plot_minimum_x & 
                                   data$time < input$time_distribution_plot_maximum_x), ] 
-        
+      
+      plot = plot + 
+        geom_density(data = plotted_data, aes(x=time, fill=line), alpha=0.3)
+      
+      if (length(saved_time_distributions) > 0) {
         plot = plot + 
-          geom_density(data = plotted_data, aes(x=time, fill=line), alpha=.3)
+          scale_fill_manual(values = time_distribution_colors[1:length(saved_time_distributions)])
       }
     }
 
