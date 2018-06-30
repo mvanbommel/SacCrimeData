@@ -1,0 +1,12 @@
+name: SacCrimeData
+title: SacCrimeData
+username:
+account: mvanbommel
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 347440
+bundleId: 1388181
+url: https://mvanbommel.shinyapps.io/SacCrimeData/
+when: 1527042712.80135
+asMultiple: FALSE
+asStatic: FALSE
