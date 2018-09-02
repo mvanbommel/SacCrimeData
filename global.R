@@ -11,6 +11,7 @@ library(ggthemes, warn.conflicts = FALSE, quietly = TRUE)
 
 # To do:
 # -improve map
+#   - fix number labels under map when area selected
 #   - map appearance https://uasnap.shinyapps.io/ex_leaflet/
 #   - add more information (time, date, response time) to markers
 # - make time histogram dynamic

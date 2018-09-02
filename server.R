@@ -231,14 +231,30 @@ server <- function(input, output, session) {
         
         # Generate the subset of points to display and place them on the map 
         dispatch_subset = shape_filtered_dispatch_data()[random_order()[1:points_on_map()], ]
-        
+
+        # Compute response times for popup
+        time_choices = c("Occurence", "Received", "Dispatch", 
+                         "Enroute", "At Scene", "Clear")
+        time_values = c("occurence", "received", "dispatch",
+                        "enroute", "at_scene", "clear")
+        start_time_column = paste0(time_values[which(time_choices == input$time_range[1])], 
+                                   "_date_time")
+        end_time_column = paste0(time_values[which(time_choices == input$time_range[2])], 
+                                 "_date_time")
+        times = as.numeric(difftime(dispatch_subset[, end_time_column], 
+                                    dispatch_subset[, start_time_column],
+                                    units = "mins"))
+        dispatch_subset$response_time = times
+
         map = leaflet(data = dispatch_subset) %>% 
           addTiles() %>%
           # Include the call type description as a pop-up and the location 
           # as a label
           addCircles(~dispatch_subset$longitude, 
                      ~dispatch_subset$latitude, 
-                     popup = ~as.character(dispatch_subset$call_type_description), 
+                     popup = ~paste0('Occurence Time:<br>', dispatch_subset$occurence_date_time,
+                                     '<br> Call Type:<br>', dispatch_subset$call_type_description,
+                                     '<br> Response Time (', input$time_range[2], ' - ', input$time_range[1], '):<br>', round(dispatch_subset$response_time, 1), ' Minutes'), 
                      label = ~as.character(dispatch_subset$location),
                      stroke = TRUE,
                      layerId = as.character(dispatch_subset$id),
