@@ -49,7 +49,7 @@ server <- function(input, output, session) {
   # Map ----
   # * Variables ----
   # List to store selected map points
-  map_reactive_values <- reactiveValues(selected_points = list())
+  map_reactive_values = reactiveValues(selected_points = list())
   
   # dispatch_data_coordinates = reactive({
   #   SpatialPointsDataFrame(map_filtered_dispatch_data()[,c('longitude', 'latitude')] , map_filtered_dispatch_data()[, c('latitude', 'longitude', 'id', 'selected_id')])
@@ -348,8 +348,8 @@ server <- function(input, output, session) {
       }
       
       # Filter data based on the selected time range
-      plotted_data = data[which(data$time > input$time_distribution_plot_minimum_x & 
-                                  data$time < input$time_distribution_plot_maximum_x), ] 
+      plotted_data = data[which(data$time >= input$time_distribution_plot_minimum_x & 
+                                  data$time <= input$time_distribution_plot_maximum_x), ] 
       
       plot = plot + 
         geom_density(data = plotted_data, aes(x=time, fill=line), alpha=0.3)

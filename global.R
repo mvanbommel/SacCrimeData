@@ -17,7 +17,6 @@ library(ggthemes, warn.conflicts = FALSE, quietly = TRUE)
 # - map appearance https://uasnap.shinyapps.io/ex_leaflet/
 # - add more information (time, date, response time) to markers
 # - make time histogram dynamic
-#   - fix deafult line names (before and after a line is added)
 #   - input to switch between density and frequency
 #   - error message for over 100 distributions
 
