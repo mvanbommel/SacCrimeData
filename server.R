@@ -119,31 +119,21 @@ server <- function(input, output, session) {
   shape_filtered_dispatch_data = reactive({
     shape_filtered_dispatch_data = map_filtered_dispatch_data()
     if (length(input$dispatch_map_draw_new_feature) > 0) {
+     
       filtered_dispatch_data_coordinates = SpatialPointsDataFrame(shape_filtered_dispatch_data[,c('longitude', 
                                                                                                   'latitude')], 
                                                                   shape_filtered_dispatch_data[, c('latitude', 
                                                                                                    'longitude', 
                                                                                                    'id', 
                                                                                                    'selected_id')])
-      selected_ids <- findLocations(shape = input$dispatch_map_draw_new_feature,
-                                    location_coordinates = filtered_dispatch_data_coordinates,
-                                    location_id_colname = "id")
-      
-      for(id in selected_ids){
-        if(id %in% map_reactive_values$selected_points){
-          # don't add id
-        } else {
-          # add id
-          map_reactive_values$selected_points <- append(map_reactive_values$selected_points, 
-                                                        id, 
-                                                        0)
-        }
-      }
+      map_reactive_values$selected_points = findLocations(shape = input$dispatch_map_draw_new_feature,
+                                                          location_coordinates = filtered_dispatch_data_coordinates,
+                                                          location_id_colname = "id")
       
       # look up points by ids found
-      shape_filtered_dispatch_data <- subset(shape_filtered_dispatch_data, id %in% map_reactive_values$selected_points)
+      shape_filtered_dispatch_data = subset(shape_filtered_dispatch_data, id %in% map_reactive_values$selected_points)
     }
-    
+  
     shape_filtered_dispatch_data
   })
   
@@ -257,6 +247,7 @@ server <- function(input, output, session) {
           addDrawToolbar(
             targetGroup='Selected',
             polylineOptions=FALSE,
+            circleMarkerOptions = FALSE,
             markerOptions = FALSE,
             polygonOptions = drawPolygonOptions(shapeOptions=drawShapeOptions(fillOpacity = 0,
                                                                               color = 'white',
