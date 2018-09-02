@@ -10,14 +10,10 @@ library(ggthemes, warn.conflicts = FALSE, quietly = TRUE)
 
 
 # To do:
-# improve map
-# - map search? https://redoakstrategic.com/geoshaper/
-#   - check all shapes are working
-#   - fix clear button
-# - map appearance https://uasnap.shinyapps.io/ex_leaflet/
-# - add more information (time, date, response time) to markers
+# -improve map
+#   - map appearance https://uasnap.shinyapps.io/ex_leaflet/
+#   - add more information (time, date, response time) to markers
 # - make time histogram dynamic
-#   - input to switch between density and frequency
 #   - error message for over 100 distributions
 
 

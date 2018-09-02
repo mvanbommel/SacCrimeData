@@ -342,9 +342,18 @@ server <- function(input, output, session) {
       plotted_data = data[which(data$time >= input$time_distribution_plot_minimum_x & 
                                   data$time <= input$time_distribution_plot_maximum_x), ] 
       
-      plot = plot + 
-        geom_density(data = plotted_data, aes(x=time, fill=line), alpha=0.3)
-      
+      if (input$time_distribution_plot_type == 'Frequency') {
+        plot = plot +
+          geom_density(data = plotted_data, aes(x=time, y=..count.., fill=line), alpha=0.3) + 
+          labs(x = "Time (Minutes)", y = 'Frequency', fill = 'Legend') +
+          theme_bw()
+      } else {
+        plot = plot +
+          geom_density(data = plotted_data, aes(x=time, fill=line), alpha=0.3) + 
+          labs(x = "Time (Minutes)", y = 'Density', fill = 'Legend') +
+          theme_bw()
+      }
+    
       if (length(saved_time_distributions) > 0) {
         plot = plot + 
           scale_fill_manual(values = time_distribution_colors[1:length(saved_time_distributions)])

@@ -67,6 +67,12 @@ shinyUI(
         actionButton("reset_time_distribution_plot", h3("Reset Plot"), icon = NULL, width = NULL)
       ),
       
+      fluidRow(
+        radioButtons("time_distribution_plot_type", h3("Plot Type"),
+                    choices = c('Density', 'Frequency'),
+                    selected = 'Density')
+      ),
+      
       plotOutput("time_distribution")
 
     ),
