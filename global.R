@@ -14,7 +14,7 @@ library(ggthemes, warn.conflicts = FALSE, quietly = TRUE)
 #   - map appearance https://uasnap.shinyapps.io/ex_leaflet/
 #   - add more information (time, date, response time) to markers
 # - make time histogram dynamic
-#   - error message for over 100 distributions
+#   - error message for over 20 distributions
 
 
 

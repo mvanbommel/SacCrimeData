@@ -290,7 +290,7 @@ server <- function(input, output, session) {
                                 units = "mins"))
     
     # Use the distribution name input as the label in the legend
-    distribution = data.frame(time = times, line = input$new_time_distribution_name)
+    distribution = data.frame(time = times, line = paste0("Line ", line_number$number))
     
     distribution
   })
@@ -309,7 +309,7 @@ server <- function(input, output, session) {
   
   output$time_distribution = renderPlot({
     req(filtered_dispatch_data())
-   
+
     saved_time_distributions = reactive_values$saved_time_distributions
     
     if (length(saved_time_distributions) == 0) {
@@ -340,7 +340,7 @@ server <- function(input, output, session) {
       
       # Filter data based on the selected time range
       plotted_data = data[which(data$time >= input$time_distribution_plot_minimum_x & 
-                                  data$time <= input$time_distribution_plot_maximum_x), ] 
+                                data$time <= input$time_distribution_plot_maximum_x), ] 
       
       if (input$time_distribution_plot_type == 'Frequency') {
         plot = plot +
