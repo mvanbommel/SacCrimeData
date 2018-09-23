@@ -1,22 +1,25 @@
 
 library(geojsonR)
 library(data.table)
-library(rjson)
+library(jsonlite)
 
-url_js = FROM_GeoJson(url_file_string = "https://opendata.arcgis.com/datasets/9efe7653009b448f8d177c1da0cc068f_0.geojson")
+# Current method works but is slow
+# Go backwards through url_js and stop at a given date?
 
-str(url_js)
+url_js = FROM_GeoJson(url_file_string = "https://opendata.arcgis.com/datasets/9efe7653009b448f8d177c1da0cc068f_0.geojson")[[1]]
 
+df = data.frame(matrix(NA, nrow = length(url_js), ncol = 22))
 
-
-test = rbindlist(url_js[[1]], fill=TRUE)
-
-
-dfs <- lapply(url_js[[1]], data.frame, stringsAsFactors = FALSE)
-
-test = unlist(url_js[[1]])
+for (i in 1:1000) {
+  coordinates = url_js[[i]]$geometry$coordinates
+  names(coordinates) = c("X", "Y")
+  properties = unlist(url_js[[i]]$properties)
   
-test2 = do.call("rbind", test)
+  if (i == 1) {
+    colnames(df) = c("X", "Y", names(properties))
+  }
+  
+  df[i, names(coordinates)] = coordinates
+  df[i, names(properties)] = properties
+}
 
-
-result <- fromJSON(unlist(url_js[[1]]))
