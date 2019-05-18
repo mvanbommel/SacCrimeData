@@ -50,7 +50,7 @@ missing_data_index = function(column_name, dispatch_data) {
   
 }
 
-convert_to_date_time <- function(date_time_name, dispatch_data) {
+convert_to_date_time = function(date_time_name, dispatch_data) {
   complete_data_index = which(!is.na(dispatch_data[, paste0(date_time_name, '_date')]) & !is.na(dispatch_data[, paste0(date_time_name, '_time')])) 
   
   # Create an empty date time columns (necessary to keep from conversion to numeric)
@@ -158,13 +158,14 @@ colnames(dispatch_data)[1] = 'X'
 
 dispatch_data = dispatch_data %>%
   mutate(Report_Created = ifelse(Report_Created == Y, TRUE, FALSE),
-         Day_of_Week = recode(Day_of_Week, 'Sun' = 'Sunday',
-                                              'Mon' = 'Monday',
-                                              'Tue' = 'Tuesday',
-                                              'Wed' = 'Wednesday',
-                                              'Thu' = 'Thursday', 
-                                              'Fri' = 'Friday',
-                                              'Sat' = 'Saturday')) %>%
+         Day_of_Week = recode(Day_of_Week, 
+                              'Sun' = 'Sunday',
+                              'Mon' = 'Monday',
+                              'Tue' = 'Tuesday',
+                              'Wed' = 'Wednesday',
+                              'Thu' = 'Thursday', 
+                              'Fri' = 'Friday',
+                              'Sat' = 'Saturday')) %>%
   select('location' = Location,
          'call_type_code' = Call_Type,
          'call_type_description' = Description,
@@ -252,6 +253,7 @@ time_distribution_colors = rep(c('blue',
                                  'beige',
                                  'black'),
                                10)
+
 
 all_descriptions = sort(unique(dispatch_data$call_type_description))
 description_time_groups = c('IN PROGRESS', 
