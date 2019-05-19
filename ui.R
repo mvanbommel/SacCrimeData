@@ -11,30 +11,26 @@ shinyUI(
       fluidRow(
         uiOutput("points_on_map"),
         
-        sliderInput("occurence_time_range", h3("Occurence Time"),
-                    min=0, max=24, value=c(0, 24),
-                    post=':00'),
-        
         # NULL end defaults to today's date
         dateRangeInput("occurence_date_range", h3("Occurence Date"),
-                       start=min(dispatch_data$occurence_date), end=NULL),
+                       start="2019-01-01", end=NULL),
         
         checkboxGroupInput("day_of_week", h3("Day of the Week"),
                            choiceNames = list('S', 'M', 'T', 'W', 'T', 'F', 'S'),
-                           choiceValues = list('Sunday', 
-                                               'Monday', 
-                                               'Tuesday', 
-                                               'Wednesday',
-                                               'Thursday', 
-                                               'Friday', 
-                                               'Saturday'),
-                           selected = list('Sunday', 
-                                           'Monday', 
-                                           'Tuesday', 
-                                           'Wednesday',
-                                           'Thursday', 
-                                           'Friday', 
-                                           'Saturday'),
+                           choiceValues = list('Sun',
+                                               'Mon',
+                                               'Tue',
+                                               'Wed',
+                                               'Thu',
+                                               'Fri',
+                                               'Sat'),
+                           selected = list('Sun',
+                                           'Mon',
+                                           'Tue',
+                                           'Wed',
+                                           'Thu',
+                                           'Fri',
+                                           'Sat'),
                            inline = TRUE),
         
         pickerInput("description_groups", h3("Call Type Description Groups"), 
@@ -46,34 +42,9 @@ shinyUI(
                                    `live-search` = TRUE), 
                     multiple = TRUE),
         
-        uiOutput("call_type_description"),
-        
-        
-        sliderTextInput("time_range", h3("Start and End of Time Range"),
-                        choices = c("Occurence", "Received", "Dispatch", 
-                                    "Enroute", "At Scene", "Clear"),
-                        selected = c("Occurence", "Clear"))
+        uiOutput("call_type_description")
 
-      ),
-
-      fluidRow(
-        numericInput("time_distribution_plot_minimum_x", h3("Min Time"),
-                     value = 0, min = 0, max = 1440, step = 15),
-        numericInput("time_distribution_plot_maximum_x", h3("Max Time"),
-                     value = 60, min = 0, max = 1440, step = 15),
-        checkboxInput("plot_current_distribution", h3("Plot Current Line"), value = TRUE, width = NULL),
-        uiOutput("new_time_distribution_name"),
-        actionButton("save_new_time_distribution", h3("Save Line"), icon = NULL, width = NULL),
-        actionButton("reset_time_distribution_plot", h3("Reset Plot"), icon = NULL, width = NULL)
-      ),
-      
-      fluidRow(
-        radioButtons("time_distribution_plot_type", h3("Plot Type"),
-                    choices = c('Density', 'Frequency'),
-                    selected = 'Density')
-      ),
-      
-      plotOutput("time_distribution")
+      )
 
     ),
     

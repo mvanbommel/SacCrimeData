@@ -6,15 +6,20 @@ library("esri2sf")
 # https://services5.arcgis.com/54falWtcpty3V47Z/arcgis/rest/services/general_offenses_year3/FeatureServer/0/validateSQL
 
 url = "https://services5.arcgis.com/54falWtcpty3V47Z/ArcGIS/rest/services/cad_calls_year3/FeatureServer/0"
-where = "Occurence_Date < date'2019-01-03' AND (Description = 'SHOTS FIRED - LESS THAN 15 AGO' OR Call_Type = '971')"
+where = "Occurence_Date < date'2019-01-03' AND (Description = 'SHOTS FIRED - LESS THAN 15 AGO' OR Call_Type = '971')  & resultRecordCount=4"
+token = "resultRecordCount=4"
+where = "1=1"
 df = esri2sf(url, where = where)
 
 
-
-
-
-
-
+response_raw = httr::content(x = httr::POST(url = "https://services5.arcgis.com/54falWtcpty3V47Z/ArcGIS/rest/services/cad_calls_year3/FeatureServer/0/query",
+                             body = "?where=Occurence_Date<date'2019-01-03'+AND+(Description='SHOTS FIRED - LESS THAN 15 AGO'+OR+Call_Type='971')&outSR='4326'&f=json",
+                             encode = 'form'),
+              as = 'text')
+response = jsonlite::fromJSON(response_raw,
+                              simplifyDataFrame = FALSE,
+                              simplifyVector = FALSE,
+                              digits = NA)
 
 library(geojsonR)
 library(jsonlite)
