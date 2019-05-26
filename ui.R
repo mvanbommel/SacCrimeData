@@ -8,6 +8,7 @@ shinyUI(
         htmlOutput("points_displayed_message"),
         actionButton("new_points", "New points")
       ),
+      
       fluidRow(
         uiOutput("points_on_map"),
         

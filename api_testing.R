@@ -1,4 +1,62 @@
 
+
+url = "https://services5.arcgis.com/54falWtcpty3V47Z/ArcGIS/rest/services/cad_calls_year3/FeatureServer/0"
+
+dispatch_data = try(esri2sf(url, limit = 1000) %>%
+                      as.data.frame())
+
+coordinates = do.call(rbind, st_geometry(dispatch_data$geoms)) %>% 
+  as.data.frame() %>% 
+  setNames(c("longitude","latitude"))
+
+dispatch_data = cbind(dispatch_data, coordinates)
+
+# Missing Latitude and Longitude to NA
+dispatch_data$X_Coordinate[dispatch_data$longitude < -142] = NA
+dispatch_data$Y_Coordinate[dispatch_data$latitude < 32] = NA
+dispatch_data$longitude[dispatch_data$longitude < -142] = NA
+dispatch_data$latitude[dispatch_data$latitude < 32] = NA
+
+longitude_model = lm(longitude ~ X_Coordinate + X_Coordinate, data = dispatch_data)
+latitude_model = lm(latitude ~ Y_Coordinate + Y_Coordinate, data = dispatch_data)
+
+save(latitude_model, longitude_model, file = 'coordinate_models.RData')
+
+longitude_predictions = predict(longitude_model, newdata = dispatch_data[, c('X_Coordinate', 'Y_Coordinate')])
+latitude_predictions = predict(latitude_model, newdata = dispatch_data)
+
+
+sqrt(mean((dispatch_data$longitude - longitude_predictions)^2, na.rm = TRUE))
+sqrt(mean((dispatch_data$latitude - latitude_predictions)^2, na.rm = TRUE))
+
+
+coords = dispatch_data[, c('X_Coordinate', 'Y_Coordinate', 'latitude', 'longitude')] %>%
+  na.omit
+dd = coords[1:5, ]
+
+library(sp)
+library(vec2dtransf)
+coords = dd[, c("latitude", "longitude")]
+data = dd
+spdf <- SpatialPointsDataFrame(coords = coords,
+                               data = data)
+
+
+aft = vec2dtransf::AffineTransformation(dd)
+vec2dtransf::calculateParameters(aft)
+vec2dtransf::getParameters(aft)
+
+
+new_coord = vec2dtransf::applyTransformation(aft, spdf)
+
+
+data(meuse)
+coords <- meuse[ , c("x", "y")]   # coordinates
+data   <- meuse[ , 3:14] 
+spdf <- SpatialPointsDataFrame(coords = coords,
+                               data = data)
+
+
 library("esri2sf")
 
 # https://rstudio-pubs-static.s3.amazonaws.com/301644_61297506548c4b3cb9e7cc8cbc8578ce.html

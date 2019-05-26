@@ -28,23 +28,24 @@ server = function(input, output, session) {
   
   
   # Reactive Values ----
+  # * Results Offset ----
   values = reactiveValues(results_offset = 0)
   
   observeEvent(input$new_points, {
     values$results_offset = values$results_offset + input$points_on_map
   })
-  
-  reset_results_offset_1 = observeEvent(input$occurence_date_range, {
+  observeEvent(input$occurence_date_range, {
     values$results_offset = 0
   })
-  reset_results_offset_1 = observeEvent(input$day_of_week, {
+  observeEvent(input$day_of_week, {
     values$results_offset = 0
   })
-  reset_results_offset_1 = observeEvent(input$call_type_description, {
+  observeEvent(input$call_type_description, {
     values$results_offset = 0
   })
   
   # Data ----
+  # * Create Query ----
   dispatch_data_query_filter = reactive({
     req(input$occurence_date_range)
     req(input$day_of_week)
@@ -70,10 +71,39 @@ server = function(input, output, session) {
       query = paste0(query, call_type_description_filter)
     }
     
-    query
+    if (length(input$dispatch_map_draw_new_feature) > 0) {
+
+      if (input$dispatch_map_draw_new_feature$properties$feature_type == 'rectangle') {
+        boundaries = as.data.frame(matrix(unlist(input$dispatch_map_draw_new_feature$geometry$coordinates),
+                                          ncol = 2, 
+                                          byrow = TRUE),
+                                   stringsAsFactors = FALSE)
+        colnames(boundaries) = c('longitude', 'latitude')
+        min_longitude = min(boundaries$longitude)
+        max_longitude = max(boundaries$longitude)
+        min_latitude = min(boundaries$latitude)
+        max_latitude = max(boundaries$latitude)
+        
+        min_X_Coordinate = predict(longitude_model, newdata = data.frame(longitude = min_longitude))
+        max_X_Coordinate = predict(longitude_model, newdata = data.frame(longitude = max_longitude))
+        min_Y_Coordinate = predict(latitude_model, newdata = data.frame(latitude = min_latitude))
+        max_Y_Coordinate = predict(latitude_model, newdata = data.frame(latitude = max_latitude))
+        
+        shape_filter = paste0(" AND X_Coordinate >= ", min_X_Coordinate,
+                              " AND X_Coordinate <= ", max_X_Coordinate,
+                              " AND Y_Coordinate >= ", min_Y_Coordinate,
+                              " AND Y_Coordinate <= ", max_Y_Coordinate,
+                              " ")
+        
+        query = paste0(query, shape_filter)
+      }
+    }
+    
+    return(query)
     
   })
   
+  # * Pull Data ----
   filtered_dispatch_data = reactive({
     req(input$points_on_map)
     req(input$occurence_date_range)
@@ -107,16 +137,12 @@ server = function(input, output, session) {
   
   
   # Map ----
-  # * Variables ----
-  # List to store selected map points
-  map_reactive_values = reactiveValues(selected_points = list())
-  
   # Compute the number of observations in the filtered data
   number_filtered_observations = reactive({
     nrow(filtered_dispatch_data())
   })
   
-  # ** Map ----
+  # * Filter Data ----
   map_filtered_dispatch_data = reactive({
     if (nrow(filtered_dispatch_data()) == 0) {
       filtered_dispatch_data()
@@ -142,43 +168,15 @@ server = function(input, output, session) {
     nrow(map_filtered_dispatch_data())
   })
   
-  # ** Shapes ----
-  # Filter in drawn shapes, if a drawn shape exists
-  shape_filtered_dispatch_data = reactive({
-    shape_filtered_dispatch_data = map_filtered_dispatch_data()
-    if (length(input$dispatch_map_draw_new_feature) > 0) {
-     
-      filtered_dispatch_data_coordinates = SpatialPointsDataFrame(shape_filtered_dispatch_data[,c('longitude', 
-                                                                                                  'latitude')], 
-                                                                  shape_filtered_dispatch_data[, c('latitude', 
-                                                                                                   'longitude', 
-                                                                                                   'id', 
-                                                                                                   'selected_id')])
-      map_reactive_values$selected_points = findLocations(shape = input$dispatch_map_draw_new_feature,
-                                                          location_coordinates = filtered_dispatch_data_coordinates,
-                                                          location_id_colname = "id")
-      
-      # look up points by ids found
-      shape_filtered_dispatch_data = subset(shape_filtered_dispatch_data, id %in% map_reactive_values$selected_points)
-    }
-  
-    shape_filtered_dispatch_data
-  })
-  
-  # Compute the number of observations in the shape filtered data
-  number_shape_filtered_observations = reactive({
-    nrow(shape_filtered_dispatch_data())
-  })
-  
   
   # Determine how many points to display on the map
   points_on_map = reactive({
-    req(input$points_on_map, number_shape_filtered_observations())
+    req(input$points_on_map, number_map_filtered_observations())
     
     # If the user selects more points than are available, display the maximum 
     # number of points available
-    if (input$points_on_map > number_shape_filtered_observations()) {
-      points_on_map = number_shape_filtered_observations()
+    if (input$points_on_map > number_map_filtered_observations()) {
+      points_on_map = number_map_filtered_observations()
     } else {
       points_on_map = input$points_on_map
     }
@@ -211,7 +209,7 @@ server = function(input, output, session) {
         # observations:
         
         # Generate the subset of points to display and place them on the map 
-        dispatch_subset = shape_filtered_dispatch_data()
+        dispatch_subset = map_filtered_dispatch_data()
 
         map = leaflet(data = dispatch_subset) %>% 
           addTiles() %>%
@@ -219,130 +217,26 @@ server = function(input, output, session) {
           # as a label
           addCircles(~dispatch_subset$longitude, 
                      ~dispatch_subset$latitude, 
-                     popup = ~paste0('Occurence Date:<br>', dispatch_subset$occurence_date, '<br>',
-                                     '<br> Call Type:<br>', dispatch_subset$call_type_description), 
+                     popup = ~paste0('Address:<br>', dispatch_subset$location, '<br>',
+                                     '<br>Occurence Date:<br>', dispatch_subset$occurence_date, '<br>',
+                                     '<br>Call Type:<br>', dispatch_subset$call_type_description), 
                      label = ~as.character(dispatch_subset$location),
-                     stroke = TRUE,
-                     layerId = as.character(dispatch_subset$id),
-                     highlightOptions = highlightOptions(color = "mediumseagreen",
-                                                         bringToFront = TRUE)) %>%
+                     stroke = TRUE) %>%
           addDrawToolbar(
-            targetGroup='Selected',
-            polylineOptions=FALSE,
+            targetGroup = 'Selected',
+            polylineOptions = FALSE,
             circleMarkerOptions = FALSE,
             markerOptions = FALSE,
-            polygonOptions = drawPolygonOptions(shapeOptions=drawShapeOptions(fillOpacity = 0,
-                                                                              color = 'white',
-                                                                              weight = 3)),
             rectangleOptions = drawRectangleOptions(shapeOptions=drawShapeOptions(fillOpacity = 0,
                                                                                   color = 'white',
                                                                                   weight = 3)),
-            circleOptions = drawCircleOptions(shapeOptions = drawShapeOptions(fillOpacity = 0,
-                                                                              color = 'white',
-                                                                              weight = 3)),
+            polygonOptions = FALSE,
+            circleOptions = FALSE,
             editOptions = editToolbarOptions(edit = FALSE, selectedPathOptions = selectedPathOptions()))
       }
     }
   
-    map
-  })
-
-  
-  # * Time Distribution Output ----
-  # Initialize values for the saved time distributions
-  reactive_values = reactiveValues(saved_time_distributions = list(), 
-                                   saved_time_distribution_number = 1)
-  
-  # Get the distribution for the currently selected input values
-  new_time_distribution = reactive({
-    req(filtered_dispatch_data())
-    
-    time_choices = c("Occurence", "Received", "Dispatch", 
-                     "Enroute", "At Scene", "Clear")
-    time_values = c("occurence", "received", "dispatch",
-                    "enroute", "at_scene", "clear")
-    
-    start_time_column = paste0(time_values[which(time_choices == input$time_range[1])], 
-                               "_date_time")
-    end_time_column = paste0(time_values[which(time_choices == input$time_range[2])], 
-                             "_date_time")
-    
-    times = as.numeric(difftime(time_filtered_dispatch_data()[, end_time_column], 
-                                time_filtered_dispatch_data()[, start_time_column],
-                                units = "mins"))
-    
-    # Use the distribution name input as the label in the legend
-    distribution = data.frame(time = times, line = paste0("Line ", line_number$number))
-    
-    distribution
-  })
-  
-  # Save the current distributions (adds to any previously saved distributions)
-  observeEvent(input$save_new_time_distribution, {
-    reactive_values$saved_time_distributions[[reactive_values$saved_time_distribution_number]] = new_time_distribution()
-    reactive_values$saved_time_distribution_number = reactive_values$saved_time_distribution_number + 1
-  })
-  
-  # Reset the saved distributions
-  observeEvent(input$reset_time_distribution_plot, {
-    reactive_values$saved_time_distributions = list()
-    reactive_values$saved_time_distribution_number = 1
-  })
-  
-  output$time_distribution = renderPlot({
-    req(filtered_dispatch_data())
-
-    saved_time_distributions = reactive_values$saved_time_distributions
-    
-    if (length(saved_time_distributions) == 0) {
-      # If no distributions are saved:
-      if(input$plot_current_distribution) {
-        # Show distribution from current inputs
-        saved_time_distributions = list(new_time_distribution())
-      } else {
-        # Shot no plot
-        saved_time_distributions = list()
-      }
-    } else {
-      if(input$plot_current_distribution) {
-        # Also show distribution from current inputs
-        saved_time_distributions[[reactive_values$saved_time_distribution_number]] = new_time_distribution()
-      } 
-    }
-
-    plot = ggplot()
-    data = NULL
-    if (length(saved_time_distributions) > 0) {
-      # Update the line_number reactive value for the new_time_distribution_name input
-      line_number$number = length(saved_time_distributions) 
-      
-      for (i in 1:length(saved_time_distributions)) {
-        data = rbind(data, saved_time_distributions[[i]])
-      }
-      
-      # Filter data based on the selected time range
-      plotted_data = data[which(data$time >= input$time_distribution_plot_minimum_x & 
-                                data$time <= input$time_distribution_plot_maximum_x), ] 
-      
-      if (input$time_distribution_plot_type == 'Frequency') {
-        plot = plot +
-          geom_density(data = plotted_data, aes(x=time, y=..count.., fill=line), alpha=0.3) + 
-          labs(x = "Time (Minutes)", y = 'Frequency', fill = 'Legend') +
-          theme_bw()
-      } else {
-        plot = plot +
-          geom_density(data = plotted_data, aes(x=time, fill=line), alpha=0.3) + 
-          labs(x = "Time (Minutes)", y = 'Density', fill = 'Legend') +
-          theme_bw()
-      }
-    
-      if (length(saved_time_distributions) > 0) {
-        plot = plot + 
-          scale_fill_manual(values = time_distribution_colors[1:length(saved_time_distributions)])
-      }
-    }
-
-    plot
+    return(map)
   })
   
 }
