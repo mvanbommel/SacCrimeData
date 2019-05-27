@@ -26,10 +26,14 @@ server = function(input, output, session) {
                 label = h3("Call Type Description"), 
                 choices = choice_list,
                 selected = choice_list,
+                multiple = TRUE,
                 options = list(`selected-text-format` = "count > 1",
                                `actions-box` = TRUE,
-                               `live-search` = TRUE), 
-                multiple = TRUE)
+                               `live-search` = TRUE,
+                               `size` = 15), 
+                choicesOpt = list(
+                  content = gsub(pattern = '-', replace = '<br>', x = choice_list)
+                ))
   })
   
   
@@ -264,13 +268,15 @@ server = function(input, output, session) {
           addTiles() %>%
           # Include the call type description as a pop-up and the location 
           # as a label
-          addCircles(~dispatch_subset$longitude, 
-                     ~dispatch_subset$latitude, 
-                     popup = ~paste0('Address:<br>', dispatch_subset$location, '<br>',
-                                     '<br>Occurence Date:<br>', dispatch_subset$occurence_date, '<br>',
-                                     '<br>Call Type:<br>', dispatch_subset$call_type_description), 
-                     label = ~as.character(dispatch_subset$location),
-                     stroke = TRUE) %>%
+          addCircleMarkers(~dispatch_subset$longitude, 
+                           ~dispatch_subset$latitude, 
+                           radius = 4,
+                           color = '#337ab7',
+                           popup = ~paste0('Address:<br>', dispatch_subset$location, '<br>',
+                                           '<br>Occurence Date:<br>', dispatch_subset$occurence_date, '<br>',
+                                           '<br>Call Type:<br>', dispatch_subset$call_type_description), 
+                           label = ~as.character(dispatch_subset$location),
+                           stroke = TRUE) %>%
           addDrawToolbar(
             targetGroup = 'Selected',
             polylineOptions = FALSE,

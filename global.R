@@ -14,6 +14,7 @@ library(esri2sf, warn.conflicts = FALSE, quietly = TRUE)
 
 # TO DO:
 # - api_is_live warning/flag
+# - way to clear map rectangle filter / reset filters
 # - floating inputs http://shiny.rstudio.com/gallery/superzip-example.html
 
 # Functions ----
@@ -65,7 +66,7 @@ rename_dispatch_data = function(dispatch_data) {
 api_is_live = TRUE
 
 # Total Observations ----
-number_total_observations = try(jsonlite::fromJSON("https://services5.arcgis.com/54falWtcpty3V47Z/arcgis/rest/services/cad_calls_year3/FeatureServer/0/query?where=1=1&outFields=*&returnDistinctValues=true&returnCountOnly=true&outSR=4326&f=json")$count)
+number_total_observations = try(jsonlite::fromJSON("21https://services5.arcgis.com/54falWtcpty3V47Z/arcgis/rest/services/cad_calls_year3/FeatureServer/0/query?where=1=1&outFields=*&returnDistinctValues=true&returnCountOnly=true&outSR=4326&f=json")$count)
 
 if ('try-error' %in% class(number_total_observations)) {
   # API is down
