@@ -13,10 +13,13 @@ shinyUI(
         uiOutput("points_on_map"),
         
         # NULL end defaults to today's date
-        dateRangeInput("occurence_date_range", h3("Occurence Date"),
-                       start="2019-01-01", end=NULL),
+        dateRangeInput("occurence_date_range", 
+                       label = h3("Occurence Date"),
+                       start = "2019-01-01", 
+                       end = NULL),
         
-        checkboxGroupInput("day_of_week", h3("Day of the Week"),
+        checkboxGroupInput("day_of_week", 
+                           label = h3("Day of the Week"),
                            choiceNames = list('S', 'M', 'T', 'W', 'T', 'F', 'S'),
                            choiceValues = list('Sun',
                                                'Mon',
@@ -34,7 +37,8 @@ shinyUI(
                                            'Sat'),
                            inline = TRUE),
         
-        pickerInput("description_groups", h3("Call Type Description Groups"), 
+        pickerInput("description_groups", 
+                    label = h3("Call Type Groups"), 
                     choices = list(Times = description_time_groups,
                                    Crimes = description_crime_groups), 
                     selected = description_groups,

@@ -3,12 +3,14 @@ server = function(input, output, session) {
   # UI Inputs ----
   # Input for selecting the number of points to display on the map
   output$points_on_map = renderUI({
-    numericInput("points_on_map", h3("Points Displayed"),
-                 min=0, max=100, value = 25)
+    numericInput("points_on_map", 
+                 label = h3("Points Displayed"),
+                 min = 0, 
+                 max = 1000, 
+                 value = 25)
   })
   
   output$call_type_description = renderUI({
-    
     choice_list = sort(all_descriptions[unique(unlist(lapply(input$description_groups, 
                                                              grep, 
                                                              all_descriptions)))])
@@ -17,13 +19,17 @@ server = function(input, output, session) {
       choice_list = sort(append(choice_list, other_crime_descriptions))
     }
     
-    pickerInput("call_type_description", h3("Call Type Description"), 
-              choices = choice_list,
-              selected = choice_list,
-              options = list(`selected-text-format` = "count > 1",
-                             `actions-box` = TRUE,
-                             `live-search` = TRUE), 
-              multiple = TRUE)
+    # Filter out duplicate descriptions
+    choice_list = unique(choice_list)
+    
+    pickerInput("call_type_description", 
+                label = h3("Call Type Description"), 
+                choices = choice_list,
+                selected = choice_list,
+                options = list(`selected-text-format` = "count > 1",
+                               `actions-box` = TRUE,
+                               `live-search` = TRUE), 
+                multiple = TRUE)
   })
   
   
@@ -51,8 +57,8 @@ server = function(input, output, session) {
     req(input$day_of_week)
     req(input$call_type_description)
     
-    query = paste0("Occurence_Date > date'", input$occurence_date_range[1], 
-                   "' AND Occurence_Date < date'", input$occurence_date_range[2], "' ")
+    query = paste0("Occurence_Date >= date'", input$occurence_date_range[1], 
+                   "' AND Occurence_Date <= date'", input$occurence_date_range[2], "' ")
     
     if (!(length(input$day_of_week) %in% c(0, 7))) {
       day_of_week_filter = paste0(" AND (Day_of_Week = '", 
@@ -61,7 +67,7 @@ server = function(input, output, session) {
                                   "') ")
       query = paste0(query, day_of_week_filter)
     }
-    
+   
     if (!(length(input$call_type_description) %in% c(0, number_total_call_type_descriptions))) {
       call_type_description_filter = paste0(" AND (Description = '",
                                             paste(input$call_type_description,
@@ -73,34 +79,34 @@ server = function(input, output, session) {
     
     if (length(input$dispatch_map_draw_new_feature) > 0) {
 
-      if (input$dispatch_map_draw_new_feature$properties$feature_type == 'rectangle') {
-        boundaries = as.data.frame(matrix(unlist(input$dispatch_map_draw_new_feature$geometry$coordinates),
-                                          ncol = 2, 
-                                          byrow = TRUE),
-                                   stringsAsFactors = FALSE)
-        colnames(boundaries) = c('longitude', 'latitude')
-        min_longitude = min(boundaries$longitude)
-        max_longitude = max(boundaries$longitude)
-        min_latitude = min(boundaries$latitude)
-        max_latitude = max(boundaries$latitude)
-        
-        min_X_Coordinate = predict(longitude_model, newdata = data.frame(longitude = min_longitude))
-        max_X_Coordinate = predict(longitude_model, newdata = data.frame(longitude = max_longitude))
-        min_Y_Coordinate = predict(latitude_model, newdata = data.frame(latitude = min_latitude))
-        max_Y_Coordinate = predict(latitude_model, newdata = data.frame(latitude = max_latitude))
-        
-        shape_filter = paste0(" AND X_Coordinate >= ", min_X_Coordinate,
-                              " AND X_Coordinate <= ", max_X_Coordinate,
-                              " AND Y_Coordinate >= ", min_Y_Coordinate,
-                              " AND Y_Coordinate <= ", max_Y_Coordinate,
-                              " ")
-        
-        query = paste0(query, shape_filter)
-      }
+      boundaries = as.data.frame(matrix(unlist(input$dispatch_map_draw_new_feature$geometry$coordinates),
+                                        ncol = 2, 
+                                        byrow = TRUE),
+                                 stringsAsFactors = FALSE)
+      colnames(boundaries) = c('longitude', 'latitude')
+      
+      min_longitude = min(boundaries$longitude)
+      max_longitude = max(boundaries$longitude)
+      min_latitude = min(boundaries$latitude)
+      max_latitude = max(boundaries$latitude)
+      
+      # Convert longitude and latitude to X and Y for query
+      min_X_Coordinate = predict(longitude_model, newdata = data.frame(longitude = min_longitude))
+      max_X_Coordinate = predict(longitude_model, newdata = data.frame(longitude = max_longitude))
+      min_Y_Coordinate = predict(latitude_model, newdata = data.frame(latitude = min_latitude))
+      max_Y_Coordinate = predict(latitude_model, newdata = data.frame(latitude = max_latitude))
+      
+      shape_filter = paste0(" AND X_Coordinate >= ", min_X_Coordinate,
+                            " AND X_Coordinate <= ", max_X_Coordinate,
+                            " AND Y_Coordinate >= ", min_Y_Coordinate,
+                            " AND Y_Coordinate <= ", max_Y_Coordinate,
+                            " ")
+      
+      query = paste0(query, shape_filter)
+      
     }
     
     return(query)
-    
   })
   
   # * Pull Data ----
@@ -116,23 +122,57 @@ server = function(input, output, session) {
     where = dispatch_data_query_filter()
     limit = input$points_on_map
     offset = values$results_offset
-    
-    dispatch_data = try(esri2sf(url, where = where, limit = limit, offset = offset) %>%
-      as.data.frame())
-    
-    if ('try-error' %in% class(dispatch_data)) {
-      # Sometimes a HTTP2 errors occurs, if so try again
+
+    if (api_is_live) {
       dispatch_data = try(esri2sf(url, where = where, limit = limit, offset = offset) %>%
-                            as.data.frame())
+        as.data.frame())
+      
+      if ('try-error' %in% class(dispatch_data)) {
+        # Sometimes a HTTP2 errors occurs, if so try again
+        dispatch_data = try(esri2sf(url, where = where, limit = limit, offset = offset) %>%
+                              as.data.frame())
+      }
+      
+      if ('try-error' %in% class(dispatch_data)) {
+        api_is_live = FALSE
+      }
     }
-    
-    clean_dispatch_data(dispatch_data)
+
+    if (api_is_live == FALSE) {
+      sqldf_query = paste0("SELECT 
+                            * 
+                            FROM backup_dispatch_data 
+                            WHERE 1 = 1
+                            AND ", where, "
+                            LIMIT ", limit, "
+                            OFFSET ", offset)
+      # Remove the 'date' casts from the query
+      sqldf_query = gsub(pattern = 'date', 
+                         replacement = '',
+                         x = sqldf_query)
+      dispatch_data = sqldf(sqldf_query)
+    } else {
+      dispatch_data = clean_dispatch_data(dispatch_data)
+    }
+
+    return(rename_dispatch_data(dispatch_data))
   })
   
   # Table ----
   # Table in the table pane
   output$dispatch_table = DT::renderDataTable({
-    filtered_dispatch_data()
+    table_data = filtered_dispatch_data() %>%
+      select('Occurence Date' = occurence_date,
+             'Day' = day_of_week,
+             'Call Type' = call_type_description,
+             'Report Created' = report_created,
+             'Address' = location,
+             'Longitude' = longitude,
+             'Latitude' = latitude,
+             'Officer ID' = reporting_officer_id,
+             'Unit ID' = unit_id,
+             'Police District' = police_district,
+             'Police Beat' = police_beat)
   })
   
   
@@ -186,11 +226,20 @@ server = function(input, output, session) {
   # are available
   output$points_displayed_message = renderUI({
     req(number_filtered_observations())
+    missing_location_point_count = input$points_on_map - points_on_map()
     HTML(paste0("Showing ", 
                  points_on_map(), 
                  " of ", 
                  number_total_observations, 
-                 " total entries."))
+                 " total entries.",
+                case_when(
+                  missing_location_point_count == 0 ~ "",
+                  missing_location_point_count == 1 ~ "<br>(1 point missing location data).",
+                  missing_location_point_count > 1 ~ paste0("<br>(",
+                                                            missing_location_point_count, 
+                                                            " points missing location data).")
+                  )
+    ))
   })
 
   
