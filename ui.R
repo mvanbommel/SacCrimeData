@@ -69,12 +69,24 @@ shinyUI(
                                     icon = icon("map-marker"), 
                                     style = "color: #fff; 
                                             background-color: #337ab7;
-                                            border-color: #2e6da4")
+                                            border-color: #2e6da4;")
          ),
          
          tags$div(id = "points_displayed_message",
                   htmlOutput("points_displayed_message")
-         )
+         ),
+         
+         tags$div(id = "api_status_button",
+                  uiOutput("api_status_button")
+         ),
+         
+         tags$div(id = "help_button",         
+                  actionButton("help",
+                               label = "",
+                               icon = icon("question"),
+                               style = "color: #337ab7; 
+                                        background-color: #fff;
+                                        border-color: #2e6da4;"))
       )
     ),
     

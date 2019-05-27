@@ -1,19 +1,25 @@
 #remotes::install_github(repo = "mvanbommel/esri2sf")
 
 library(shiny, warn.conflicts = FALSE, quietly = TRUE)
+library(shinyWidgets, warn.conflicts = FALSE, quietly = TRUE)
 library(DT, warn.conflicts = FALSE, quietly = TRUE)
+
+library(R.utils, warn.conflicts = FALSE, quietly = TRUE)
+
 library(leaflet, warn.conflicts = FALSE, quietly = TRUE)
 library(leaflet.extras, warn.conflicts = FALSE, quietly = TRUE)
 library(sp, warn.conflicts = FALSE, quietly = TRUE)
-library(sqldf, warn.conflicts = FALSE, quietly = TRUE)
-library(dplyr, warn.conflicts = FALSE, quietly = TRUE)
-library(shinyWidgets, warn.conflicts = FALSE, quietly = TRUE)
-library(ggplot2, warn.conflicts = FALSE, quietly = TRUE)
-library(ggthemes, warn.conflicts = FALSE, quietly = TRUE)
+library(sf, warn.conflicts = FALSE, quietly = TRUE)
 library(esri2sf, warn.conflicts = FALSE, quietly = TRUE)
 
+library(sqldf, warn.conflicts = FALSE, quietly = TRUE)
+library(dplyr, warn.conflicts = FALSE, quietly = TRUE)
+
+library(ggplot2, warn.conflicts = FALSE, quietly = TRUE)
+library(ggthemes, warn.conflicts = FALSE, quietly = TRUE)
+
+
 # TO DO:
-# - api_is_live warning/flag
 # - way to clear map rectangle filter / reset filters
 # - floating inputs http://shiny.rstudio.com/gallery/superzip-example.html
 
@@ -66,7 +72,10 @@ rename_dispatch_data = function(dispatch_data) {
 api_is_live = TRUE
 
 # Total Observations ----
-number_total_observations = try(jsonlite::fromJSON("21https://services5.arcgis.com/54falWtcpty3V47Z/arcgis/rest/services/cad_calls_year3/FeatureServer/0/query?where=1=1&outFields=*&returnDistinctValues=true&returnCountOnly=true&outSR=4326&f=json")$count)
+# If fromJSON() takes too long, return error (likely an issue with API)
+number_total_observations = try(withTimeout(jsonlite::fromJSON("https://services5.arcgis.com/54falWtcpty3V47Z/arcgis/rest/services/cad_calls_year3/FeatureServer/0/query?where=1=1&outFields=*&returnDistinctValues=true&returnCountOnly=true&outSR=4326&f=json")$count,
+                                            timeout = 5,
+                                            onTimeout = 'error'))
 
 if ('try-error' %in% class(number_total_observations)) {
   # API is down

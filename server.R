@@ -36,11 +36,70 @@ server = function(input, output, session) {
                 ))
   })
   
+  output$api_status_button = renderUI({
+    if (values$api_is_live) {
+      actionButton("api_button", 
+                   label = "API",
+                   icon = icon("check-circle"), 
+                   style = "color: #fff; 
+                            background-color: #218838;
+                            border-color: #1e7e34;")
+    } else {
+      actionButton("api_button", 
+                   label = "API",
+                   icon = icon("times-circle"), 
+                   style = "color: #fff; 
+                            background-color: #dc3545;
+                            border-color: #dc3545;")
+    }
+  })
+  
+  # Pop Ups ----
+  observeEvent(input$api_button, {
+    if (values$api_is_live) {
+      sendSweetAlert(
+        session = session,
+        title = "API Status",
+        text = "Sac Open Data API is up and running. 
+        Data is up to date.",
+        type = "success"
+      )
+    } else {
+      sendSweetAlert(
+        session = session,
+        title = "API Status",
+        text = "Sac Open Data API is down. 
+        Backup data for January 2019 has been loaded into the app.",
+        type = "error"
+      )
+    }
+  })
+  
+  observeEvent(input$help, {
+    sendSweetAlert(
+      session = session,
+      title = "Help",
+      text = "This app displays Sacramento Police Dispatch data for the current year from data.cityofsacramento.org. 
+      
+      Use the floating panel to filter the results displayed on the map. 
+
+      You can also filter the data by area using the rectangle button in the top right.
+
+      The 'New Points' button refreshes the results.
+
+      Click on a point for more information.
+
+      Full details for the points on the map are available in the 'Details' tab.",
+      type = "information"
+    )
+  })
+  
   
   # Reactive Values ----
-  # * Results Offset ----
-  values = reactiveValues(results_offset = 0)
+  values = reactiveValues(api_is_live = api_is_live,
+                          results_offset = 0)
   
+  # * Results Offset ----
   observeEvent(input$new_points, {
     values$results_offset = values$results_offset + input$points_on_map
   })
@@ -127,7 +186,7 @@ server = function(input, output, session) {
     limit = input$points_on_map
     offset = values$results_offset
 
-    if (api_is_live) {
+    if (values$api_is_live) {
       dispatch_data = try(esri2sf(url, where = where, limit = limit, offset = offset) %>%
         as.data.frame())
       
@@ -138,11 +197,11 @@ server = function(input, output, session) {
       }
       
       if ('try-error' %in% class(dispatch_data)) {
-        api_is_live = FALSE
+        values$api_is_live = FALSE
       }
     }
 
-    if (api_is_live == FALSE) {
+    if (values$api_is_live == FALSE) {
       sqldf_query = paste0("SELECT 
                             * 
                             FROM backup_dispatch_data 
