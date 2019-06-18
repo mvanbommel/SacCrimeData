@@ -1,3 +1,14 @@
+.container-fluid {
+  background-color: #337ab7;
+}
+
+.title {
+  text-align: center;
+  font-weight: bold;
+  color: white;
+}
+
+
 #controls {
   /* Appearance */
   background-color: white;

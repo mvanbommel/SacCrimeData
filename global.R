@@ -68,7 +68,7 @@ api_is_live = TRUE
 
 # Total Observations ----
 # If fromJSON() takes too long, return error (likely an issue with API)
-number_total_observations = try(withTimeout(jsonlite::fromJSON("https://services5.arcgis.com/54falWtcpty3V47Z/arcgis/rest/services/cad_calls_year3/FeatureServer/0/query?where=1=1&outFields=*&returnDistinctValues=true&returnCountOnly=true&outSR=4326&f=json")$count,
+number_total_observations = try(withTimeout(jsonlite::fromJSON("2https://services5.arcgis.com/54falWtcpty3V47Z/arcgis/rest/services/cad_calls_year3/FeatureServer/0/query?where=1=1&outFields=*&returnDistinctValues=true&returnCountOnly=true&outSR=4326&f=json")$count,
                                             timeout = 5,
                                             onTimeout = 'error'))
 

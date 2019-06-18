@@ -1,30 +1,32 @@
 shinyUI(
-  navbarPage("Sacramento Dispatch Data", id = "dispatch_data",
-    
-    # Map Tab ----
-    tabPanel("Map", id="map_tab",
-      div(class = "outer",
-         
-         tags$head(
-           # Include custom CSS
-           includeCSS("styles.css")
-         ),
-         
-         leafletOutput("dispatch_map", width = "100%", height = "100%"),
-         
-         absolutePanel(id = "controls", 
-                       fixed = TRUE,
-                       draggable = TRUE, 
-                       top = 70, 
-                       left = 10,
-                       right = "auto", 
-                       bottom = "auto",
-                       width = 350, 
-                       height = "auto",
-                       align = "center",
-                       
+  fluidPage(title = "Sacramento Dispatch Data", id = "dispatch_data",
+
+    HTML("<h4 class = 'title'>Sacramento Dispatch Data</h4>"),
+            
+    div(class = "outer",
+       
+       tags$head(
+         # Include custom CSS
+         includeCSS("styles.css")
+       ),
+       
+       leafletOutput("dispatch_map", width = "100%", height = "100%"),
+       
+       absolutePanel(id = "controls", 
+                     fixed = TRUE,
+                     draggable = TRUE, 
+                     top = 70, 
+                     left = 10,
+                     right = "auto", 
+                     bottom = "auto",
+                     width = 350, 
+                     height = "auto",
+                     align = "center",
+
+                     tags$div(id = 'collapse_button',  class = "collapse in",
+                              
                        uiOutput("points_on_map"),
-                       
+                     
                        # NULL end defaults to today's date
                        dateRangeInput("occurence_date_range", 
                                       label = h3("Occurence Date"),
@@ -62,39 +64,38 @@ shinyUI(
                                                   `live-search` = TRUE), 
                                    multiple = TRUE),
                        
-                       uiOutput("call_type_description"),
+                       uiOutput("call_type_description")
                        
-                       actionButton("new_points", 
-                                    label = "New Points",
-                                    icon = icon("map-marker"), 
-                                    style = "color: #fff; 
-                                            background-color: #337ab7;
-                                            border-color: #2e6da4;")
-         ),
+                     ),
+                     
+         HTML('<br>'),
+         HTML('<button style="float: left;" data-toggle="collapse" data-target="#collapse_button">Hide</button>'),
          
-         tags$div(id = "points_displayed_message",
-                  htmlOutput("points_displayed_message")
-         ),
-         
-         tags$div(id = "api_status_button",
-                  uiOutput("api_status_button")
-         ),
-         
-         tags$div(id = "help_button",         
-                  actionButton("help",
-                               label = "",
-                               icon = icon("question"),
-                               style = "color: #337ab7; 
-                                        background-color: #fff;
-                                        border-color: #2e6da4;"))
-      )
-    ),
-    
-    # Table Tab ----
-    tabPanel("Details", id="table_tab",
-      fluidRow(
-       DT::dataTableOutput("dispatch_table")
-      )
+         actionButton("new_points", 
+                      label = "New Points",
+                      icon = icon("map-marker"), 
+                      style = "color: #fff; 
+                               background-color: #337ab7;
+                               border-color: #2e6da4;
+                               float: right;")
+       ),
+
+       
+       tags$div(id = "points_displayed_message",
+                htmlOutput("points_displayed_message")
+       ),
+       
+       tags$div(id = "api_status_button",
+                uiOutput("api_status_button")
+       ),
+       
+       tags$div(id = "help_button",         
+                actionButton("help",
+                             label = "",
+                             icon = icon("question"),
+                             style = "color: #337ab7; 
+                                      background-color: #fff;
+                                      border-color: #2e6da4;"))
     )
   )
 )
