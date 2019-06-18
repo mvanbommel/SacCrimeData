@@ -18,11 +18,6 @@ library(dplyr, warn.conflicts = FALSE, quietly = TRUE)
 library(ggplot2, warn.conflicts = FALSE, quietly = TRUE)
 library(ggthemes, warn.conflicts = FALSE, quietly = TRUE)
 
-
-# TO DO:
-# - way to clear map rectangle filter / reset filters
-# - floating inputs http://shiny.rstudio.com/gallery/superzip-example.html
-
 # Functions ----
 clean_dispatch_data = function(dispatch_data) {
   if (nrow(dispatch_data) == 0) {
