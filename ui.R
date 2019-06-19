@@ -89,13 +89,16 @@ shinyUI(
                 uiOutput("api_status_button")
        ),
        
+       tags$div(id = "github_button",
+                actionButton("github_button",
+                    label = "",
+                    icon = icon("github", "fa-1.5x"),
+                    onclick ="window.open('https://github.com/mvanbommel/SacCrimeData', '_blank')")),
+       
        tags$div(id = "help_button",         
                 actionButton("help",
                              label = "",
-                             icon = icon("question"),
-                             style = "color: #337ab7; 
-                                      background-color: #fff;
-                                      border-color: #2e6da4;"))
+                             icon = icon("question")))
     )
   )
 )

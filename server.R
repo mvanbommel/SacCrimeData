@@ -87,10 +87,8 @@ server = function(input, output, session) {
 
       The 'New Points' button refreshes the results.
 
-      Click on a point for more information.
-
-      Full details for the points on the map are available in the 'Details' tab.",
-      type = "information"
+      Click on a point for more information.",
+      type = "info"
     )
   })
   

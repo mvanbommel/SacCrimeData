@@ -22,7 +22,7 @@
 #controls:hover {
   /* Fade in while hovering */
   opacity: 0.95;
-  transition-delay: 0;
+  transition-delay: 0s;
 }
 
 /* Position main div, push below tab bar */
@@ -47,12 +47,25 @@ div.outer {
 #api_status_button {
   position: absolute;
   bottom: 10px;
+  right: 50px;
+}
+#github_button {
+  position: absolute;
+  bottom: 10px;
   right: 25px;
+  
+  color: #fff; 
+  background-color: #000;
+  border-color: #2e6da4;
 }
 #help_button {
   position: absolute;
   bottom: 20px;
   right: 5px;
+  
+  color: #337ab7; 
+  background-color: #fff;
+  border-color: #2e6da4;
 }
 /* Uncertain why help_button and api_status_button have different bottom values, but it works */
 
