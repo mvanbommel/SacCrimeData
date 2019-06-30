@@ -83,7 +83,7 @@ server = function(input, output, session) {
     )
   })
   
-  # Warning ----
+  # Warnings ----
   observe({
     if (values$filtered_observation_rows > 999) {
       showNotification(paste("Warning:\nOnly the first 1000 points meeting filter criteria displayed. Use New Points button to view the next 1000."), 
@@ -92,9 +92,17 @@ server = function(input, output, session) {
     }
   })
   
+  observe({
+    if (values$filtered_observation_rows == 0) {
+      showNotification(paste("Warning:\nNo observations meet the filter criteria."), 
+                       type = 'error', 
+                       duration = NULL)
+    }
+  })
+  
   # Reactive Values ----
   values = reactiveValues(api_is_live = api_is_live,
-                          filtered_observation_rows = 0)
+                          filtered_observation_rows = 1)
   
   
   # Data ----
@@ -172,7 +180,6 @@ server = function(input, output, session) {
     if (values$api_is_live) {
       dispatch_data = try(esri2sf(url, where = where, limit = limit) %>%
         as.data.frame())
-      
       if ('try-error' %in% class(dispatch_data)) {
         # Sometimes a HTTP2 errors occurs, if so try again
         dispatch_data = try(esri2sf(url, where = where, limit = limit) %>%

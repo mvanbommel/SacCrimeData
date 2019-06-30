@@ -84,22 +84,24 @@ number_total_observations = try(withTimeout(jsonlite::fromJSON("https://services
 if ('try-error' %in% class(number_total_observations)) {
   # API is down
   api_is_live = FALSE
-  
-  load('january_2019_dispatch_data.RData')
-  backup_dispatch_data = clean_dispatch_data(dispatch_data) %>%
-    select(-geoms)
-  
-  # Dates need to be characters for sqldf()
-  backup_dispatch_data$Occurence_Date = as.character(backup_dispatch_data$Occurence_Date)
-  
-  number_total_observations = nrow(backup_dispatch_data)
-  
-  rm(dispatch_data)
 }
+
+# Load Backup Data ----
+load('january_2019_dispatch_data.RData')
+backup_dispatch_data = clean_dispatch_data(dispatch_data) %>%
+  select(-geoms)
+
+# Dates need to be characters for sqldf()
+backup_dispatch_data$Occurence_Date = as.character(backup_dispatch_data$Occurence_Date)
+
+number_total_observations = nrow(backup_dispatch_data)
+
+rm(dispatch_data)
 
 # Dates ----
 if (api_is_live) {
-  most_recent_date = epoch_to_calendar_date(jsonlite::fromJSON("https://services5.arcgis.com/54falWtcpty3V47Z/arcgis/rest/services/cad_calls_year3/FeatureServer/0/query?where=1=1&outFields=Occurence_Date&orderByFields=Occurence_Date%20DESC&returnGeometry=false&resultRecordCount=1&outSR=4326&f=json")$features$attributes$Occurence_Date)
+  #most_recent_date = epoch_to_calendar_date(jsonlite::fromJSON("https://services5.arcgis.com/54falWtcpty3V47Z/arcgis/rest/services/cad_calls_year3/FeatureServer/0/query?where=1=1&outFields=Occurence_Date&orderByFields=Occurence_Date%20DESC&returnGeometry=false&resultRecordCount=1&outSR=4326&f=json")$features$attributes$Occurence_Date)
+  most_recent_date = Sys.Date()
 } else {
   most_recent_date = max(backup_dispatch_data$Occurence_Date)
 }
