@@ -1,15 +1,6 @@
 server = function(input, output, session) {
   
   # UI Inputs ----
-  # Input for selecting the number of points to display on the map
-  output$points_on_map = renderUI({
-    numericInput("points_on_map", 
-                 label = h3("Points Displayed"),
-                 min = 0, 
-                 max = 1000, 
-                 value = 25)
-  })
-  
   output$call_type_description = renderUI({
     choice_list = sort(all_descriptions[unique(unlist(lapply(input$description_groups, 
                                                              grep, 
@@ -81,9 +72,9 @@ server = function(input, output, session) {
       title = "Help",
       text = "This app displays Sacramento Police Dispatch data for the current year from data.cityofsacramento.org. 
       
-      Use the floating panel to filter the results displayed on the map. 
+      Use the sidebar to filter the results displayed on the map. The sidebar can be opened and closed using the button in the header. 
 
-      You can also filter the data by area using the rectangle button in the top right.
+      You can also filter the data by area using the rectangle button in the top right (below the zoom buttons).
 
       The 'New Points' button refreshes the results.
 
@@ -92,43 +83,41 @@ server = function(input, output, session) {
     )
   })
   
+  # Warning ----
+  observe({
+    if (values$filtered_observation_rows > 999) {
+      showNotification(paste("Warning:\nOnly the first 1000 points meeting filter criteria displayed. Use New Points button to view the next 1000."), 
+                       type = 'error', 
+                       duration = NULL)
+    }
+  })
   
   # Reactive Values ----
   values = reactiveValues(api_is_live = api_is_live,
-                          results_offset = 0)
+                          filtered_observation_rows = 0)
   
-  # * Results Offset ----
-  observeEvent(input$new_points, {
-    values$results_offset = values$results_offset + input$points_on_map
-  })
-  observeEvent(input$occurence_date_range, {
-    values$results_offset = 0
-  })
-  observeEvent(input$day_of_week, {
-    values$results_offset = 0
-  })
-  observeEvent(input$call_type_description, {
-    values$results_offset = 0
-  })
   
   # Data ----
   # * Create Query ----
   dispatch_data_query_filter = reactive({
     req(input$occurence_date_range)
-    req(input$day_of_week)
     req(input$call_type_description)
     
     query = paste0("Occurence_Date >= date'", input$occurence_date_range[1], 
                    "' AND Occurence_Date <= date'", input$occurence_date_range[2], "' ")
-    
-    if (!(length(input$day_of_week) %in% c(0, 7))) {
+
+    if (length(input$day_of_week) == 0) {
+      day_of_week_filter = " AND (Day_of_Week = 'NULL')"
+      query = paste0(query, day_of_week_filter)
+    }
+    else if (length(input$day_of_week)  != 7) {
       day_of_week_filter = paste0(" AND (Day_of_Week = '", 
                                   paste0(input$day_of_week, 
                                          collapse = "' OR Day_of_Week = '"),
                                   "') ")
       query = paste0(query, day_of_week_filter)
     }
-   
+ 
     if (!(length(input$call_type_description) %in% c(0, number_total_call_type_descriptions))) {
       call_type_description_filter = paste0(" AND (Description = '",
                                             paste(input$call_type_description,
@@ -172,25 +161,21 @@ server = function(input, output, session) {
   
   # * Pull Data ----
   filtered_dispatch_data = reactive({
-    req(input$points_on_map)
     req(input$occurence_date_range)
-    req(input$day_of_week)
     req(input$call_type_description)
-    
-    refresh = input$new_points
+    req(dispatch_data_query_filter())
 
     url = "https://services5.arcgis.com/54falWtcpty3V47Z/ArcGIS/rest/services/cad_calls_year3/FeatureServer/0"
     where = dispatch_data_query_filter()
-    limit = input$points_on_map
-    offset = values$results_offset
+    limit = 1000
 
     if (values$api_is_live) {
-      dispatch_data = try(esri2sf(url, where = where, limit = limit, offset = offset) %>%
+      dispatch_data = try(esri2sf(url, where = where, limit = limit) %>%
         as.data.frame())
       
       if ('try-error' %in% class(dispatch_data)) {
         # Sometimes a HTTP2 errors occurs, if so try again
-        dispatch_data = try(esri2sf(url, where = where, limit = limit, offset = offset) %>%
+        dispatch_data = try(esri2sf(url, where = where, limit = limit) %>%
                               as.data.frame())
       }
       
@@ -205,37 +190,22 @@ server = function(input, output, session) {
                             FROM backup_dispatch_data 
                             WHERE 1 = 1
                             AND ", where, "
-                            LIMIT ", limit, "
-                            OFFSET ", offset)
+                            LIMIT 1000
+                           ")
       # Remove the 'date' casts from the query
       sqldf_query = gsub(pattern = 'date', 
                          replacement = '',
                          x = sqldf_query)
       dispatch_data = sqldf(sqldf_query)
+      
+      values$filtered_observation_rows = nrow(dispatch_data)
     } else {
+      values$filtered_observation_rows = nrow(dispatch_data)
       dispatch_data = clean_dispatch_data(dispatch_data)
     }
 
     return(rename_dispatch_data(dispatch_data))
   })
-  
-  # Table ----
-  # Table in the table pane
-  output$dispatch_table = DT::renderDataTable({
-    table_data = filtered_dispatch_data() %>%
-      select('Occurence Date' = occurence_date,
-             'Day' = day_of_week,
-             'Call Type' = call_type_description,
-             'Report Created' = report_created,
-             'Address' = location,
-             'Longitude' = longitude,
-             'Latitude' = latitude,
-             'Officer ID' = reporting_officer_id,
-             'Unit ID' = unit_id,
-             'Police District' = police_district,
-             'Police Beat' = police_beat)
-  })
-  
   
   # Map ----
   # Compute the number of observations in the filtered data
@@ -269,71 +239,30 @@ server = function(input, output, session) {
     nrow(map_filtered_dispatch_data())
   })
   
-  
-  # Determine how many points to display on the map
-  points_on_map = reactive({
-    req(input$points_on_map, number_map_filtered_observations())
-    
-    # If the user selects more points than are available, display the maximum 
-    # number of points available
-    if (input$points_on_map > number_map_filtered_observations()) {
-      points_on_map = number_map_filtered_observations()
-    } else {
-      points_on_map = input$points_on_map
-    }
-  })
-  
-  # Create the message stating how many points are shown on the map and how many 
-  # are available
-  output$points_displayed_message = renderUI({
-    req(number_filtered_observations())
-    missing_location_point_count = input$points_on_map - points_on_map()
-    HTML(paste0("Showing ", 
-                 points_on_map(), 
-                 " of ", 
-                 number_total_observations, 
-                 " total entries.",
-                case_when(
-                  missing_location_point_count == 0 ~ "",
-                  missing_location_point_count == 1 ~ "<br>(1 point missing location data).",
-                  missing_location_point_count > 1 ~ paste0("<br>(",
-                                                            missing_location_point_count, 
-                                                            " points missing location data).")
-                  )
-    ))
-  })
-
-  
   # * Map Output ----
-  # ** Default Map ----
   output$dispatch_map = renderLeaflet({
     # Deafult to a blank map   
     map = leaflet() %>%
             addTiles() %>%
-            setView(-121.5, 38.55, zoom=10)
+            setView(lat = 38.55, lng = -121.5, zoom = 10)
     
-    if (!is.null(input$call_type_description)) {
-      req(input$points_on_map, number_map_filtered_observations())
+    if (!is.null(input$call_type_description) & 
+        any(input$display_control %in% c("Markers", "Heatmap"))) {
+      req(number_map_filtered_observations())
       if (number_map_filtered_observations() != 0) {
         # If a description is selected and there are more than 0 filtered 
         # observations:
         
         # Generate the subset of points to display and place them on the map 
         dispatch_subset = map_filtered_dispatch_data()
-
+        
+        # Get Display Options
+        markers = "Markers" %in% input$display_control
+        marker_groups = "Marker Groups" %in% input$display_control
+        heatmap = "Heatmap" %in% input$display_control
+   
         map = leaflet(data = dispatch_subset) %>% 
           addTiles() %>%
-          # Include the call type description as a pop-up and the location 
-          # as a label
-          addCircleMarkers(~dispatch_subset$longitude, 
-                           ~dispatch_subset$latitude, 
-                           radius = 4,
-                           color = '#337ab7',
-                           popup = ~paste0('Address:<br>', dispatch_subset$location, '<br>',
-                                           '<br>Occurence Date:<br>', dispatch_subset$occurence_date, '<br>',
-                                           '<br>Call Type:<br>', dispatch_subset$call_type_description), 
-                           label = ~as.character(dispatch_subset$location),
-                           stroke = TRUE) %>%
           addDrawToolbar(
             targetGroup = 'Selected',
             polylineOptions = FALSE,
@@ -345,6 +274,36 @@ server = function(input, output, session) {
             polygonOptions = FALSE,
             circleOptions = FALSE,
             editOptions = editToolbarOptions(edit = FALSE, selectedPathOptions = selectedPathOptions()))
+        
+        if (markers) {
+          # Include the call type description as a pop-up and the location 
+          # as a label
+          if (marker_groups) {
+            map = map %>% 
+              addMarkers(~dispatch_subset$longitude, 
+                         ~dispatch_subset$latitude, 
+                         popup = ~paste0('Address:<br>', dispatch_subset$location, '<br>',
+                                         '<br>Occurence Date:<br>', dispatch_subset$occurence_date, '<br>',
+                                         '<br>Call Type:<br>', dispatch_subset$call_type_description), 
+                         label = ~as.character(dispatch_subset$location),
+                         clusterOptions = markerClusterOptions())
+          } else {
+            map = map %>% 
+              addMarkers(~dispatch_subset$longitude, 
+                         ~dispatch_subset$latitude, 
+                         popup = ~paste0('Address:<br>', dispatch_subset$location, '<br>',
+                                         '<br>Occurence Date:<br>', dispatch_subset$occurence_date, '<br>',
+                                         '<br>Call Type:<br>', dispatch_subset$call_type_description), 
+                         label = ~as.character(dispatch_subset$location))
+          }
+        }
+        if (heatmap) {
+          map = map %>% 
+            addHeatmap(~dispatch_subset$longitude,
+                       ~dispatch_subset$latitude,
+                       radius = 10) 
+        }
+      
       }
     }
   

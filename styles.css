@@ -1,57 +1,72 @@
-.container-fluid {
-  background-color: #337ab7;
+#dispatch_map {
+  height: calc(100vh - 50px) !important;
 }
 
-.title {
-  text-align: center;
-  font-weight: bold;
-  color: white;
+.sidebar {
+  height: 90vh; 
+  
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+#sidebarCollapsed {
+  padding-top: 30px;
+}
+
+/* Navbar and Sidebar Button Color */
+.skin-blue .main-header .navbar .sidebar-toggle {
+  background-color: #357ca5;
+  color: #fff;
+}
+
+.skin-blue .main-header .navbar .sidebar-toggle:hover {
+  background-color: #222d32;
+  color: #fff;
+}
+
+.skin-blue .main-header .navbar {
+  background-color: #357ca5;
 }
 
 
-#controls {
-  /* Appearance */
-  background-color: white;
-  padding: 0 20px 20px 20px;
-  cursor: move;
-  /* Fade out while not hovering */
-  opacity: 0.35;
-  zoom: 0.9;
-  transition: opacity 500ms 1s;
+/* Control main header color widths */
+.main-header .logo {
+  width: 325px;
+  float: left !important;
 }
-#controls:hover {
-  /* Fade in while hovering */
-  opacity: 0.95;
-  transition-delay: 0s;
+.main-header .navbar-static-top {
+  margin-left: 325px;
 }
 
-/* Position main div, push below tab bar */
-div.outer {
-  position: fixed;
-  top: 41px;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  overflow: hidden;
-  padding: 0;
+/* Screens more narrow than 350px */
+/* Subtract 50px to leave room for sidebar toggle button */
+@media (max-width: 350px) {
+  .sidebar {
+    width: calc(100vw - 50px);
+  }
+  
+  #new_points {
+    left: 0px;
+  }
+  
+  .main-header .logo {
+    width: calc(100vw - 50px);
+  }
+  .main-header .navbar-static-top {
+    margin-left: calc(100vw - 50px);
+  }
 }
+
 
 /* Position and style components outside of panel */
-#points_displayed_message {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
-  font-size: 12px;
-  width: 90%;
-}
 #api_status_button {
   position: absolute;
-  bottom: 10px;
+  bottom: 2.5vh;
   right: 50px;
 }
 #github_button {
   position: absolute;
-  bottom: 10px;
+  bottom: 2.5vh;
   right: 25px;
   
   color: #fff; 
@@ -60,7 +75,7 @@ div.outer {
 }
 #help_button {
   position: absolute;
-  bottom: 20px;
+  bottom: 5vh;
   right: 5px;
   
   color: #337ab7; 

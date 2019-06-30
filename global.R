@@ -2,6 +2,7 @@
 
 library(shiny, warn.conflicts = FALSE, quietly = TRUE)
 library(shinyWidgets, warn.conflicts = FALSE, quietly = TRUE)
+library(shinydashboard, warn.conflicts = FALSE, quietly = TRUE)
 library(DT, warn.conflicts = FALSE, quietly = TRUE)
 
 library(R.utils, warn.conflicts = FALSE, quietly = TRUE)
@@ -19,6 +20,13 @@ library(ggplot2, warn.conflicts = FALSE, quietly = TRUE)
 library(ggthemes, warn.conflicts = FALSE, quietly = TRUE)
 
 # Functions ----
+epoch_to_calendar_date = function(epoch) {
+  as.Date(as.POSIXct(epoch / 1000, 
+                     origin = '1970-01-01',
+                     tz = 'America/Los_Angeles'),
+          format = '%y-%m-%d')
+}
+
 clean_dispatch_data = function(dispatch_data) {
   if (nrow(dispatch_data) == 0) {
     return(dispatch_data)
@@ -36,31 +44,32 @@ clean_dispatch_data = function(dispatch_data) {
     dispatch_data$latitude[dispatch_data$latitude < 32] = NA
     
     # Convert epoch date to calendar date
-    dispatch_data$Occurence_Date = as.Date(as.POSIXct(dispatch_data$Occurence_Date / 1000, 
-                                                      origin = '1970-01-01',
-                                                      tz = 'America/Los_Angeles'),
-                                           format = '%y-%m-%d')
+    dispatch_data$Occurence_Date = epoch_to_calendar_date(epoch = dispatch_data$Occurence_Date)
     
     return(dispatch_data)
   }
 }
 
 rename_dispatch_data = function(dispatch_data) {
-  # Select and rename columns
-  dispatch_data = dispatch_data %>%
-    select('location' = Location,
-           'call_type_code' = Call_Type,
-           'call_type_description' = Description,
-           'reporting_officer_id' = Reporting_Officer,
-           'unit_id' = Unit_ID,
-           'police_district' = Police_District,
-           'police_beat' = Beat,
-           'day_of_week' = Day_of_Week,
-           'occurence_date' = Occurence_Date,
-           'report_created' = Report_Created,
-           'longitude' = longitude,
-           'latitude' = latitude
-    )
+  if (nrow(dispatch_data) == 0) {
+    return(dispatch_data)
+  } else {
+    # Select and rename columns
+    dispatch_data = dispatch_data %>%
+      select('location' = Location,
+             'call_type_code' = Call_Type,
+             'call_type_description' = Description,
+             'reporting_officer_id' = Reporting_Officer,
+             'unit_id' = Unit_ID,
+             'police_district' = Police_District,
+             'police_beat' = Beat,
+             'day_of_week' = Day_of_Week,
+             'occurence_date' = Occurence_Date,
+             'report_created' = Report_Created,
+             'longitude' = longitude,
+             'latitude' = latitude
+      )
+  }
   return(dispatch_data)
 }
 
@@ -86,6 +95,13 @@ if ('try-error' %in% class(number_total_observations)) {
   number_total_observations = nrow(backup_dispatch_data)
   
   rm(dispatch_data)
+}
+
+# Dates ----
+if (api_is_live) {
+  most_recent_date = epoch_to_calendar_date(jsonlite::fromJSON("https://services5.arcgis.com/54falWtcpty3V47Z/arcgis/rest/services/cad_calls_year3/FeatureServer/0/query?where=1=1&outFields=Occurence_Date&orderByFields=Occurence_Date%20DESC&returnGeometry=false&resultRecordCount=1&outSR=4326&f=json")$features$attributes$Occurence_Date)
+} else {
+  most_recent_date = max(backup_dispatch_data$Occurence_Date)
 }
 
 # Descriptions ----
@@ -122,6 +138,5 @@ other_crime_descriptions = all_descriptions[-any_crime_group_index]
 
 # Coordinate Conversion Models ----
 load('coordinate_conversion_models.RData')
-
 
 
