@@ -71,7 +71,9 @@ server = function(input, output, session) {
       session = session,
       title = "Help",
       text = "This app displays Sacramento Police Dispatch data for the current year from data.cityofsacramento.org. 
-      
+
+      The most recent data available is displayed on load.      
+
       Use the sidebar to filter the results displayed on the map. The sidebar can be opened and closed using the button in the header. 
 
       You can also filter the data by area using the rectangle button in the top right (below the zoom buttons).
