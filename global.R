@@ -127,7 +127,7 @@ description_groups =  c('ASSAULT',
                         'VEHICLE ADDICENT',
                         'OTHER')
 
-any_crime_group_index = unique(unlist(lapply(description_crime_groups, 
+any_crime_group_index = unique(unlist(lapply(description_groups, 
                                              grep, 
                                              all_descriptions)))
 other_crime_descriptions = all_descriptions[-any_crime_group_index]
