@@ -30,8 +30,7 @@ sidebar = dashboardSidebar(
   
   pickerInput("description_groups", 
               label = h3("Call Type Groups"), 
-              choices = list(Times = description_time_groups,
-                             Crimes = description_crime_groups), 
+              choices = description_groups, 
               selected = description_groups,
               options = list(`selected-text-format` = "count > 1",
                              `actions-box` = TRUE,

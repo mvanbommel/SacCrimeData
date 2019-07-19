@@ -113,23 +113,19 @@ if (api_is_live) {
 }
 number_total_call_type_descriptions = length(all_descriptions)
 
-description_time_groups = c('IN PROGRESS', 
-                            'LESS THAN 5 AGO', 
-                            'LESS THAN 15 AGO')
-description_crime_groups =  c('ASSAULT',
-                              'BURGLARY',
-                              'CARJACKING',
-                              'DOMESTIC VIOLENCE',
-                              'HIT & RUN',
-                              'RAPE',
-                              'ROBBERY',
-                              'SHOOTING',
-                              'STOLEN VEHICLE',
-                              'THEFT',
-                              'VANDALISM',
-                              'VEHICLE ADDICENT',
-                              'OTHER')
-description_groups = c(description_time_groups, description_crime_groups)
+description_groups =  c('ASSAULT',
+                        'BURGLARY',
+                        'CARJACKING',
+                        'DOMESTIC VIOLENCE',
+                        'HIT & RUN',
+                        'RAPE',
+                        'ROBBERY',
+                        'SHOOTING',
+                        'STOLEN VEHICLE',
+                        'THEFT',
+                        'VANDALISM',
+                        'VEHICLE ADDICENT',
+                        'OTHER')
 
 any_crime_group_index = unique(unlist(lapply(description_crime_groups, 
                                              grep, 
