@@ -90,7 +90,7 @@ server = function(input, output, session) {
     if (values$filtered_observation_rows > 999) {
       showNotification(paste("Warning:\nOnly the first 1000 points meeting filter criteria displayed. Use New Points button to view the next 1000."), 
                        type = 'error', 
-                       duration = NULL)
+                       duration = 5)
     }
   })
   
@@ -98,13 +98,31 @@ server = function(input, output, session) {
     if (values$filtered_observation_rows == 0) {
       showNotification(paste("Warning:\nNo observations meet the filter criteria."), 
                        type = 'error', 
-                       duration = NULL)
+                       duration = 5)
     }
   })
   
   # Reactive Values ----
   values = reactiveValues(api_is_live = api_is_live,
-                          filtered_observation_rows = 1)
+                          filtered_observation_rows = 1,
+                          center_longitude = -121.5,
+                          center_latitude = 38.55, 
+                          zoom = 11)
+  
+  # * Save Map Center / Zoom ----
+  observeEvent({ 
+    input$occurence_date_range
+    input$day_of_week
+    input$description_groups
+    input$call_type_description
+    input$display_control
+  }, { 
+    if (!is.null(input$dispatch_map_zoom)) {
+      values$center_latitude = input$dispatch_map_center$lat
+      values$center_longitude = input$dispatch_map_center$lng
+      values$zoom = input$dispatch_map_zoom
+    }
+  })
   
   
   # Data ----
@@ -253,11 +271,14 @@ server = function(input, output, session) {
     # Deafult to a blank map   
     map = leaflet() %>%
             addTiles() %>%
-            setView(lat = 38.55, lng = -121.5, zoom = 10)
+            setView(lat = values$center_latitude, 
+                    lng = values$centered_longitude, 
+                    zoom = values$zoom)
     
     if (!is.null(input$call_type_description) & 
         any(input$display_control %in% c("Markers", "Heatmap"))) {
       req(number_map_filtered_observations())
+      
       if (number_map_filtered_observations() != 0) {
         # If a description is selected and there are more than 0 filtered 
         # observations:
@@ -307,6 +328,7 @@ server = function(input, output, session) {
                          group = 'selected_rectangle'))
           }
         }
+        
         if (heatmap) {
           map = map %>% 
             addHeatmap(~dispatch_subset$longitude,
@@ -314,42 +336,40 @@ server = function(input, output, session) {
                        radius = 10) 
         }
         
+        # ** Add Rectangle ----
         if (length(input$dispatch_map_draw_new_feature) > 0) {
+          boundaries = as.data.frame(matrix(unlist(input$dispatch_map_draw_new_feature$geometry$coordinates),
+                                            ncol = 2, 
+                                            byrow = TRUE),
+                                     stringsAsFactors = FALSE)
+          colnames(boundaries) = c('longitude', 'latitude')
           
+          min_longitude = min(boundaries$longitude)
+          max_longitude = max(boundaries$longitude)
+          min_latitude = min(boundaries$latitude)
+          max_latitude = max(boundaries$latitude)
+
+          map = map %>%
+            addRectangles(
+              data = map_filtered_dispatch_data(),
+              lng1 = min_longitude, lat1 = min_latitude,
+              lng2 = max_longitude, lat2 = max_latitude,
+              fillColor = "transparent",
+              layerId = 'selected_rectangle')
         }
+        
+        map = map %>%
+          setView(lat = values$center_latitude, 
+                  lng = values$center_longitude, 
+                  zoom = values$zoom)
       }
     }
   
     return(map)
   })
   
-  # * Add Rectangle ----
-  observeEvent(input$dispatch_map_draw_new_feature, {
-    boundaries = as.data.frame(matrix(unlist(input$dispatch_map_draw_new_feature$geometry$coordinates),
-                                      ncol = 2, 
-                                      byrow = TRUE),
-                               stringsAsFactors = FALSE)
-    colnames(boundaries) = c('longitude', 'latitude')
-    
-    min_longitude = min(boundaries$longitude)
-    max_longitude = max(boundaries$longitude)
-    min_latitude = min(boundaries$latitude)
-    max_latitude = max(boundaries$latitude)
-
-      
-    proxy = leafletProxy("dispatch_map")
-    proxy %>%
-      addRectangles(
-        data = map_filtered_dispatch_data(),
-        lng1 = min_longitude, lat1 = min_latitude,
-        lng2 = max_longitude, lat2 = max_latitude,
-        fillColor = "transparent",
-        layerId = 'selected_rectangle')
-  })
-  
   # * Clear Rectangle ----
   observeEvent(input$clear_rectangle, {
-    browser()
     if (input$clear_rectangle == 'TRUE') {
       # Set inputs (passed as messages) to NULL using the resentInput javascript function
       session$sendCustomMessage(type = "resetInput", message = "dispatch_map_draw_new_feature")
@@ -357,8 +377,5 @@ server = function(input, output, session) {
     }
   })
   
-  
 }
-
-
 
