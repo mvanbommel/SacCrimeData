@@ -303,7 +303,8 @@ server = function(input, output, session) {
                          popup = ~paste0('Address:<br>', dispatch_subset$location, '<br>',
                                          '<br>Occurence Date:<br>', dispatch_subset$occurence_date, '<br>',
                                          '<br>Call Type:<br>', dispatch_subset$call_type_description), 
-                         label = ~as.character(dispatch_subset$location))
+                         label = ~as.character(dispatch_subset$location,
+                         group = 'selected_rectangle'))
           }
         }
         if (heatmap) {
@@ -312,12 +313,46 @@ server = function(input, output, session) {
                        ~dispatch_subset$latitude,
                        radius = 10) 
         }
-      
+        
+        if (length(input$dispatch_map_draw_new_feature) > 0) {
+          
+        }
       }
     }
   
     return(map)
   })
   
+  
+  observeEvent(input$dispatch_map_draw_new_feature, {
+    boundaries = as.data.frame(matrix(unlist(input$dispatch_map_draw_new_feature$geometry$coordinates),
+                                      ncol = 2, 
+                                      byrow = TRUE),
+                               stringsAsFactors = FALSE)
+    colnames(boundaries) = c('longitude', 'latitude')
+    
+    min_longitude = min(boundaries$longitude)
+    max_longitude = max(boundaries$longitude)
+    min_latitude = min(boundaries$latitude)
+    max_latitude = max(boundaries$latitude)
+
+      
+    proxy = leafletProxy("dispatch_map")
+    proxy %>%
+      addRectangles(
+        data = map_filtered_dispatch_data(),
+        lng1 = min_longitude, lat1 = min_latitude,
+        lng2 = max_longitude, lat2 = max_latitude,
+        fillColor = "transparent",
+        layerId = 'selected_rectangle')
+  })
+  
+  observeEvent(input$clear_rectangle, {
+    browser()
+  })
+  
+  
 }
+
+
 

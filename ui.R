@@ -60,10 +60,8 @@ sidebar = dashboardSidebar(
 
 body = dashboardBody(
   leafletOutput("dispatch_map"),
-  tags$head(
-    # Include custom CSS
-    includeCSS("styles.css")
-  ),
+  tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
+  tags$script(src = "scripts.js"),
   tags$div(id = "points_displayed_message",
            htmlOutput("points_displayed_message")
   ),

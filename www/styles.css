@@ -89,3 +89,14 @@
   left: auto;
   right: 0px;
 }
+
+/* Custom Leaflet delete button */
+.delete-button {
+  background: url('https://img.icons8.com/android/24/000000/trash.png') no-repeat;
+  background-color: #FFF;
+  background-size: 60% 60%;
+  background-position: center;
+
+  height: 30px;  
+  width: 30px;
+}
