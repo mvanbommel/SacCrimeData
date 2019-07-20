@@ -323,7 +323,7 @@ server = function(input, output, session) {
     return(map)
   })
   
-  
+  # * Add Rectangle ----
   observeEvent(input$dispatch_map_draw_new_feature, {
     boundaries = as.data.frame(matrix(unlist(input$dispatch_map_draw_new_feature$geometry$coordinates),
                                       ncol = 2, 
@@ -347,8 +347,14 @@ server = function(input, output, session) {
         layerId = 'selected_rectangle')
   })
   
+  # * Clear Rectangle ----
   observeEvent(input$clear_rectangle, {
     browser()
+    if (input$clear_rectangle == 'TRUE') {
+      # Set inputs (passed as messages) to NULL using the resentInput javascript function
+      session$sendCustomMessage(type = "resetInput", message = "dispatch_map_draw_new_feature")
+      session$sendCustomMessage(type = "resetInput", message = "clear_rectangle")
+    }
   })
   
   

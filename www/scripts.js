@@ -19,3 +19,10 @@ $(document).on('click tap', '.delete-button', function () {
   // When delete button is clicked, change input$clear_rectangle to TRUE
   Shiny.setInputValue("clear_rectangle", "TRUE");
 });
+
+
+
+Shiny.addCustomMessageHandler('resetInput', function(variableName) {
+  // Set input variable to NULL
+  Shiny.setInputValue(variableName, null);
+});
