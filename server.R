@@ -21,8 +21,7 @@ server = function(input, output, session) {
                 options = list(`selected-text-format` = "count > 1",
                                `actions-box` = TRUE,
                                `live-search` = TRUE,
-                               `size` = 15,
-                               `dropupAuto` = FALSE), 
+                               `size` = 15), 
                 choicesOpt = list(
                   content = gsub(pattern = '-', replace = '<br>', x = choice_list)
                 ))
@@ -273,7 +272,7 @@ server = function(input, output, session) {
     map = leaflet() %>%
             addTiles() %>%
             setView(lat = values$center_latitude, 
-                    lng = values$centered_longitude, 
+                    lng = values$center_longitude, 
                     zoom = values$zoom)
     
     if (!is.null(input$call_type_description) & 

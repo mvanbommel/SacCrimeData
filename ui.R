@@ -34,8 +34,7 @@ sidebar = dashboardSidebar(
               selected = description_groups,
               options = list(`selected-text-format` = "count > 1",
                              `actions-box` = TRUE,
-                             `live-search` = TRUE,
-                             `windowPadding` = 50), 
+                             `live-search` = TRUE), 
               multiple = TRUE),
   
   uiOutput("call_type_description"),
