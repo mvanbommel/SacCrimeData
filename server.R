@@ -21,7 +21,8 @@ server = function(input, output, session) {
                 options = list(`selected-text-format` = "count > 1",
                                `actions-box` = TRUE,
                                `live-search` = TRUE,
-                               `size` = 15), 
+                               `size` = 15,
+                               `dropupAuto` = FALSE), 
                 choicesOpt = list(
                   content = gsub(pattern = '-', replace = '<br>', x = choice_list)
                 ))

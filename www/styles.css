@@ -100,3 +100,11 @@
   height: 30px;  
   width: 30px;
 }
+
+
+
+.open>.dropdown-menu{
+  top: 100% !important;
+  bottom: auto !important;
+  width: 100% !important;
+}
