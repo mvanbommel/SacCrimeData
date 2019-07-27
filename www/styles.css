@@ -13,6 +13,18 @@
   padding-top: 30px;
 }
 
+/* Remove bottom margin from input groups */
+.form-group {
+    margin-bottom: -10px;
+}
+
+/* Style the dropdown menus (force down and no wider than sidebar) */
+.dropdown-menu.open {
+  top: 100%;
+  bottom: auto;
+  width: 100%;
+}
+
 /* Navbar and Sidebar Button Color */
 .skin-blue .main-header .navbar .sidebar-toggle {
   background-color: #357ca5;
@@ -32,7 +44,7 @@
 /* Control main header color widths */
 .main-header .logo {
   width: 325px;
-  float: left !important;
+  float: left;
 }
 .main-header .navbar-static-top {
   margin-left: 325px;
@@ -102,9 +114,3 @@
 }
 
 
-
-.open>.dropdown-menu{
-  top: 100% !important;
-  bottom: auto !important;
-  width: 100% !important;
-}

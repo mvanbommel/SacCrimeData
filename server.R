@@ -45,6 +45,20 @@ server = function(input, output, session) {
     }
   })
   
+  # Start with Marker Groups Check Box enabled
+  shiny::observe({
+    shinyjs::enable("marker_groups_check_box")
+  })
+  
+  # Disable Marker Groups Check Box when Markers Check Box is FALSE (enable when TRUE)
+  shiny::observe({
+    if (input$markers_check_box == FALSE) {
+      shinyjs::disable("marker_groups_check_box")
+    } else {
+      shinyjs::enable("marker_groups_check_box")
+    }
+  })
+  
   # Pop Ups ----
   observeEvent(input$api_button, {
     if (values$api_is_live) {
@@ -115,7 +129,11 @@ server = function(input, output, session) {
     input$day_of_week
     input$description_groups
     input$call_type_description
-    input$display_control
+    input$markers_check_box
+    input$marker_groups_check_box
+    input$heatmap_check_box
+    input$dispatch_map_draw_new_feature
+    input$clear_rectangle
   }, { 
     if (!is.null(input$dispatch_map_zoom)) {
       values$center_latitude = input$dispatch_map_center$lat
@@ -276,7 +294,7 @@ server = function(input, output, session) {
                     zoom = values$zoom)
     
     if (!is.null(input$call_type_description) & 
-        any(input$display_control %in% c("Markers", "Heatmap"))) {
+        (input$markers_check_box | input$heatmap_check_box)) {
       req(number_map_filtered_observations())
       
       if (number_map_filtered_observations() != 0) {
@@ -286,11 +304,6 @@ server = function(input, output, session) {
         # Generate the subset of points to display and place them on the map 
         dispatch_subset = map_filtered_dispatch_data()
         
-        # Get Display Options
-        markers = "Markers" %in% input$display_control
-        marker_groups = "Marker Groups" %in% input$display_control
-        heatmap = "Heatmap" %in% input$display_control
-   
         map = leaflet(data = dispatch_subset) %>% 
           addTiles() %>%
           addDrawToolbar(
@@ -305,10 +318,10 @@ server = function(input, output, session) {
             circleOptions = FALSE,
             editOptions = editToolbarOptions(edit = FALSE, selectedPathOptions = selectedPathOptions()))
         
-        if (markers) {
+        if (input$markers_check_box) {
           # Include the call type description as a pop-up and the location 
           # as a label
-          if (marker_groups) {
+          if (input$marker_groups_check_box) {
             map = map %>% 
               addMarkers(~dispatch_subset$longitude, 
                          ~dispatch_subset$latitude, 
@@ -329,7 +342,7 @@ server = function(input, output, session) {
           }
         }
         
-        if (heatmap) {
+        if (input$heatmap_check_box) {
           map = map %>% 
             addHeatmap(~dispatch_subset$longitude,
                        ~dispatch_subset$latitude,

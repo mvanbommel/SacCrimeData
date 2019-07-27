@@ -41,15 +41,30 @@ sidebar = dashboardSidebar(
   
   HTML("<br>"),
   
-  prettyCheckboxGroup(
-    inputId = "display_control",
-    label = h4("Display:"),
-    choices = c("Markers", 
-                "Marker Groups", 
-                "Heatmap"),
-    selected = c("Markers", 
-                 "Marker Groups", 
-                 "Heatmap"),
+  HTML("<h4 style='padding-left: 15px; margin-bottom: 0px;'>Display:</h4>"),
+  
+  prettyCheckbox(
+    inputId = "markers_check_box",
+    label = "Markers",
+    value = TRUE,
+    icon = icon("check-square-o"), 
+    status = "primary",
+    outline = TRUE
+  ),
+  
+  prettyCheckbox(
+    inputId = "marker_groups_check_box",
+    label = "Marker Groups",
+    value = TRUE,
+    icon = icon("check-square-o"), 
+    status = "primary",
+    outline = TRUE
+  ),
+  
+  prettyCheckbox(
+    inputId = "heatmap_check_box",
+    label = "Heatmap",
+    value = TRUE,
     icon = icon("check-square-o"), 
     status = "primary",
     outline = TRUE
@@ -59,6 +74,7 @@ sidebar = dashboardSidebar(
 
 
 body = dashboardBody(
+  useShinyjs(),
   leafletOutput("dispatch_map"),
   tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
   tags$script(src = "scripts.js"),

@@ -5,9 +5,9 @@ account: mvanbommel
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 347440
-bundleId: 2250956
+bundleId: 2270285
 url: https://mvanbommel.shinyapps.io/SacCrimeData/
-when: 1563672745.26267
+when: 1564267005.02586
 asMultiple: FALSE
 asStatic: FALSE
 ignoredFiles: create_dispatch_data_backup.R|data_examination.R|estimate_coordinate_conversion_models.R
