@@ -4,7 +4,6 @@ library(shiny, warn.conflicts = FALSE, quietly = TRUE)
 library(shinyWidgets, warn.conflicts = FALSE, quietly = TRUE)
 library(shinydashboard, warn.conflicts = FALSE, quietly = TRUE)
 library(shinyjs, warn.conflicts = FALSE, quietly = TRUE)
-library(DT, warn.conflicts = FALSE, quietly = TRUE)
 
 library(R.utils, warn.conflicts = FALSE, quietly = TRUE)
 
