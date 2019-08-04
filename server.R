@@ -86,13 +86,11 @@ server = function(input, output, session) {
       title = "Help",
       text = "This app displays Sacramento Police Dispatch data for the current year from data.cityofsacramento.org. 
 
-      The most recent data available is displayed on load.      
+      The most recent day of data available is displayed on load.      
 
       Use the sidebar to filter the results displayed on the map. The sidebar can be opened and closed using the button in the header. 
 
       You can also filter the data by area using the rectangle button in the top right (below the zoom buttons).
-
-      The 'New Points' button refreshes the results.
 
       Click on a point for more information.",
       type = "info"
@@ -384,7 +382,7 @@ server = function(input, output, session) {
   # * Clear Rectangle ----
   observeEvent(input$clear_rectangle, {
     if (input$clear_rectangle == 'TRUE') {
-      # Set inputs (passed as messages) to NULL using the resentInput javascript function
+      # Set inputs (passed as messages) to NULL using the resetInput javascript function
       session$sendCustomMessage(type = "resetInput", message = "dispatch_map_draw_new_feature")
       session$sendCustomMessage(type = "resetInput", message = "clear_rectangle")
     }
