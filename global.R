@@ -124,7 +124,7 @@ description_groups =  c('ASSAULT',
                         'STOLEN VEHICLE',
                         'THEFT',
                         'VANDALISM',
-                        'VEHICLE ADDICENT',
+                        'VEHICLE ACCIDENT',
                         'OTHER')
 
 any_crime_group_index = unique(unlist(lapply(description_groups, 
