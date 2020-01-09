@@ -6,7 +6,7 @@ sidebar = dashboardSidebar(
                  label = h3("Occurrence Date"),
                  start = most_recent_date,
                  end = most_recent_date,
-                 min = paste0(format(Sys.Date(), "%Y"), "-01-01"),
+                 min = paste0(format(most_recent_date, "%Y"), "-01-01"),
                  max = most_recent_date),
   
   checkboxGroupInput("day_of_week", 
