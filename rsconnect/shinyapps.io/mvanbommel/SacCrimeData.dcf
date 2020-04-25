@@ -5,14 +5,8 @@ account: mvanbommel
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 347440
-<<<<<<< HEAD
-bundleId: 2393327
+bundleId: 3056859
 url: https://mvanbommel.shinyapps.io/SacCrimeData/
-when: 1567816679.83987
-=======
-bundleId: 2715900
-url: https://mvanbommel.shinyapps.io/SacCrimeData/
-when: 1578542689.55858
->>>>>>> cec14aba1924a6e785aa311a78a0b5d53a2da203
+when: 1587678452.2392
 asMultiple: FALSE
 asStatic: FALSE
